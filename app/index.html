@@ -1,0 +1,1936 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XVME APPS | Audio Mastering</title>
+<link rel="icon" type="image/x-icon" href="https://images.icon-icons.com/272/PNG/96/Play_Music_30003.png">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
+<style>
+  :root {
+    --void: #0d0c14;
+    --deep: #171625;
+    --panel: #171625;
+    --card: #1e1c2e;
+    --border: #322f47;
+    --border-strong: #45415f;
+    --teal: #2dd4bf;
+    --teal-dim: #8feee2;
+    --purple: #8b7bff;
+    --purple-dim: #b3a6ff;
+    --amber: #ff8a54;
+    --amber-dim: #ffc199;
+    --red: #ff453a;
+    --green: #32d74b;
+    --text: #f3f1fa;
+    --muted: #a9a5c1;
+    --dim: #726e8f;
+    --shadow-sm: 4px 4px 0 rgba(0,0,0,0.35);
+    --shadow-md: 6px 6px 0 rgba(0,0,0,0.5);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--void);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+  body::before{
+    content:'';
+    position:fixed;inset:0;
+    pointer-events:none;
+    background:
+      radial-gradient(900px 500px at 12% -10%, rgba(255,138,84,0.10), transparent 60%),
+      radial-gradient(800px 460px at 100% 8%, rgba(45,212,191,0.08), transparent 55%);
+    z-index:0;
+  }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  h1,h2,h3,h4,h5,h6,.logo,.panel-title,.upload-zone h3 { font-family: 'Space Grotesk', sans-serif; }
+
+  /* ===== EQ BARS (dipindah ke topbar, dipakai juga oleh script) ===== */
+  .eq-bars {
+    display: flex; align-items: flex-end; gap: 2px; height: 28px;
+    width: 130px;
+  }
+  .eq-bar {
+    width: 4px; border-radius: 2px 2px 0 0;
+    background: linear-gradient(to top, var(--teal), var(--purple));
+    animation: eq-anim var(--d, 0.6s) ease-in-out infinite alternate;
+    transform-origin: bottom;
+  }
+  @keyframes eq-anim { from { height: 20%; } to { height: 100%; } }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* ===== TOP BACK BUTTON (pengganti navbar) ===== */
+  .page-topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:1rem; padding:1.25rem 2rem 0; flex-wrap:wrap;
+    max-width: 1500px; margin: 0 auto;
+  }
+  .page-topbar-left{
+    display:flex; align-items:center; gap:1rem;
+  }
+  .btn-back{
+    display:inline-flex; align-items:center; gap:8px;
+    background:var(--amber); color:#0d0c14;
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:.88rem;
+    padding:10px 18px; border-radius:12px;
+    border:2px solid var(--border-strong);
+    box-shadow: var(--shadow-sm);
+    transition: all .18s ease;
+  }
+  .btn-back:hover{ transform:translate(-2px,-2px); box-shadow: var(--shadow-md); }
+  .page-topbar .page-title{
+    font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:1.1rem;
+    line-height: 1.15;
+    color: var(--teal);
+    background: linear-gradient(135deg, var(--teal), var(--purple));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing:-0.02em;
+    white-space: nowrap;
+  }
+  .page-title-sub{
+    font-weight:400; font-size: 0.68em;
+    color: var(--muted);
+    -webkit-text-fill-color: var(--muted);
+    letter-spacing: 0.15em;
+  }
+
+  /* ===== LAYOUT (full layar, tanpa navbar) ===== */
+  .main { max-width: 1500px; margin: 0 auto; padding: 1.25rem 2rem 4rem; }
+
+  /* ===== UPLOAD ZONE ===== */
+  .upload-zone {
+    border: 2px dashed var(--border-strong); border-radius: 20px;
+    padding: 2.5rem; text-align: center; cursor: pointer;
+    transition: all 0.2s ease; position: relative; overflow: hidden;
+    background: var(--panel);
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-sm);
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--teal); background: rgba(45,212,191,0.05);
+    transform: translate(-2px,-2px);
+    box-shadow: var(--shadow-md);
+  }
+  .upload-icon { font-size: 2.5rem; margin-bottom: 0.75rem; display: block; }
+  .upload-zone h3 { font-size: 1.1rem; margin-bottom: 0.4rem; }
+  .upload-zone p { color: var(--muted); font-size: 0.85rem; }
+  .upload-formats { margin-top: 0.75rem; display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
+  .format-tag {
+    padding: 2px 8px; border-radius: 4px; font-size: 0.72rem;
+    background: rgba(255,255,255,0.06); color: var(--muted); border: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  #fileInput { display: none; }
+
+  /* ===== WAVEFORM ===== */
+  .waveform-section {
+    background: var(--panel); border-radius: 20px; padding: 1rem 1.5rem;
+    border: 2px solid var(--border-strong); margin-bottom: 1.5rem; display: none;
+    box-shadow: var(--shadow-sm);
+  }
+  .waveform-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+  .waveform-title { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .waveform-info { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--teal); }
+  #waveformCanvas { width: 100%; height: 80px; border-radius: 6px; display: block; background: rgba(0,0,0,0.3); }
+  .transport {
+    display: flex; align-items: center; gap: 0.75rem; margin-top: 0.75rem; flex-wrap: wrap;
+  }
+  .btn {
+    padding: 8px 18px; border-radius: 8px; border: none; cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; font-weight: 600;
+    transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-teal { background: var(--teal); color: #000; }
+  .btn-teal:hover { background: #00d4b8; box-shadow: 0 0 20px rgba(0,245,212,0.4); }
+  .btn-ghost {
+    background: transparent; color: var(--muted); border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--teal); color: var(--teal); }
+  .btn-purple { background: var(--purple); color: #fff; }
+  .btn-purple:hover { background: #a845dd; box-shadow: 0 0 20px rgba(191,90,242,0.4); }
+  .btn-amber { background: var(--amber); color: #000; }
+  .btn-amber:hover { background: #e8900a; }
+  .btn-red { background: rgba(255,69,58,0.15); color: var(--red); border: 1px solid rgba(255,69,58,0.3); }
+  .btn-red:hover { background: rgba(255,69,58,0.25); }
+  .progress-bar { flex: 1; min-width: 120px; }
+  .progress-track {
+    height: 4px; background: var(--border); border-radius: 2px; cursor: pointer; position: relative;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--teal), var(--purple));
+    width: 0%; transition: width 0.1s;
+  }
+  .time-display { font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: var(--teal); white-space: nowrap; }
+
+  /* ===== GRID LAYOUT ===== */
+  .mastering-grid {
+    display: grid;
+    grid-template-columns: 280px 1fr 200px;
+    gap: 1.25rem;
+  }
+  @media(max-width: 1100px) { .mastering-grid { grid-template-columns: 1fr 1fr; } }
+  @media(max-width: 700px) { .mastering-grid { grid-template-columns: 1fr; } }
+
+  /* ===== PANEL CARDS ===== */
+  .panel-card {
+    background: var(--panel); border: 2px solid var(--border-strong); border-radius: 20px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .panel-header {
+    padding: 0.9rem 1.25rem; border-bottom: 2px dashed var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .panel-title {
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--muted);
+  }
+  .panel-body { padding: 1.25rem; }
+  .panel-indicator {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+  }
+  .panel-indicator.off { background: var(--dim); box-shadow: none; }
+
+  /* ===== GENRE DROPDOWN ===== */
+  .genre-search {
+    width: 100%; background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 12px; color: var(--text);
+    font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem;
+    outline: none;
+  }
+  .genre-search:focus { border-color: var(--teal); box-shadow: 0 0 0 2px rgba(0,245,212,0.1); }
+  .genre-dropdown {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 200;
+    background: var(--card); border: 1px solid var(--teal);
+    border-radius: 10px; max-height: 260px; overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .genre-dropdown::-webkit-scrollbar { width: 4px; }
+  .genre-dropdown::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .dropdown-group-label {
+    padding: 6px 12px 3px; font-size: 0.62rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.5px; color: var(--teal);
+    border-top: 1px solid var(--border); margin-top: 2px;
+  }
+  .dropdown-group-label:first-child { border-top: none; margin-top: 0; }
+  .dropdown-item {
+    padding: 7px 12px; cursor: pointer; display: flex; align-items: center;
+    gap: 8px; font-size: 0.82rem; transition: background 0.15s;
+  }
+  .dropdown-item:hover, .dropdown-item.focused { background: rgba(0,245,212,0.08); }
+  .dropdown-item.active { background: rgba(0,245,212,0.12); color: var(--teal); }
+  .dropdown-item .di-emoji { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+  .dropdown-item .di-name { flex: 1; font-weight: 600; }
+  .dropdown-item .di-tag { font-size: 0.65rem; color: var(--muted); background: rgba(255,255,255,0.05); padding: 1px 6px; border-radius: 4px; flex-shrink: 0; }
+  .dropdown-item .di-lufs { font-size: 0.65rem; color: var(--dim); font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
+  .dropdown-no-result { padding: 1rem; text-align: center; color: var(--muted); font-size: 0.82rem; }
+  .selected-genre-card {
+    background: linear-gradient(135deg, rgba(0,245,212,0.07), rgba(191,90,242,0.07));
+    border: 1px solid rgba(0,245,212,0.25); border-radius: 10px; padding: 0.75rem;
+  }
+  .sgc-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; }
+  .sgc-emoji { font-size: 1.4rem; }
+  .sgc-name { font-weight: 700; font-size: 0.95rem; }
+  .sgc-tag { font-size: 0.65rem; color: var(--muted); }
+  .sgc-desc { font-size: 0.75rem; color: var(--muted); line-height: 1.5; margin-top: 0.35rem; }
+  .sgc-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+  .sgc-badge { padding: 2px 7px; border-radius: 10px; font-size: 0.65rem; font-weight: 600; background: rgba(255,255,255,0.06); color: var(--muted); border: 1px solid var(--border); }
+
+  /* ===== EQ SECTION ===== */
+  .eq-section { grid-column: 1 / -1; }
+  .eq-bands {
+    display: grid; grid-template-columns: repeat(10, 1fr); gap: 0.5rem;
+    align-items: end;
+  }
+  @media(max-width: 700px) { .eq-bands { grid-template-columns: repeat(5, 1fr); } }
+  .eq-band { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+  .eq-band-label { font-size: 0.65rem; color: var(--muted); text-align: center; font-family: 'JetBrains Mono', monospace; }
+  .eq-band-value { font-size: 0.7rem; color: var(--teal); font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+  .vertical-slider { -webkit-appearance: none; appearance: none; width: 120px; height: 4px; outline: none; cursor: pointer; border-radius: 2px; writing-mode: vertical-lr; direction: rtl; }
+  .vertical-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--teal); cursor: pointer; box-shadow: 0 0 10px rgba(0,245,212,0.5); border: 2px solid #000; }
+  .vertical-slider::-webkit-slider-runnable-track { background: var(--border); border-radius: 2px; }
+
+  /* ===== KNOB CONTROLS ===== */
+  .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .control-item { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+  .control-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; text-align: center; }
+  .control-value { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--teal); font-weight: 600; }
+  .knob-wrap { position: relative; width: 60px; height: 60px; cursor: pointer; user-select: none; }
+  .knob-svg { width: 60px; height: 60px; }
+  .knob-track { fill: none; stroke: var(--border); stroke-width: 4; stroke-linecap: round; }
+  .knob-fill { fill: none; stroke: var(--teal); stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 0.1s; }
+  .knob-dot { fill: var(--teal); }
+  .knob-center { fill: var(--card); stroke: var(--border); stroke-width: 1; }
+
+  /* ===== SLIDERS ===== */
+  .slider-row { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+  .slider-header { display: flex; justify-content: space-between; align-items: center; }
+  .slider-name { font-size: 0.78rem; color: var(--muted); }
+  .slider-val { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--teal); }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
+    background: var(--border); outline: none; border-radius: 2px; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+    background: var(--teal); cursor: pointer; box-shadow: 0 0 8px rgba(0,245,212,0.4);
+    border: 2px solid #000;
+  }
+  input[type=range].purple-range::-webkit-slider-thumb { background: var(--purple); box-shadow: 0 0 8px rgba(191,90,242,0.4); }
+  input[type=range].amber-range::-webkit-slider-thumb { background: var(--amber); box-shadow: 0 0 8px rgba(255,159,10,0.4); }
+
+  /* ===== VU METER ===== */
+  .vu-section { display: flex; flex-direction: column; gap: 0.75rem; }
+  .vu-channel { display: flex; flex-direction: column; gap: 0.25rem; }
+  .vu-label { font-size: 0.65rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .vu-meter { height: 12px; background: var(--border); border-radius: 6px; overflow: hidden; position: relative; }
+  .vu-fill {
+    height: 100%; border-radius: 6px; position: absolute; left: 0; top: 0;
+    background: linear-gradient(90deg, var(--green) 0%, #9dff00 60%, var(--amber) 80%, var(--red) 100%);
+    transition: width 0.08s;
+  }
+  .vu-peak {
+    position: absolute; top: 0; height: 100%; width: 2px; background: #fff; opacity: 0.7;
+    border-radius: 1px;
+  }
+  .vu-db { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--teal); text-align: right; }
+  .lufs-display {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 1rem; text-align: center; margin-top: 0.5rem;
+  }
+  .lufs-val { font-family: 'JetBrains Mono', monospace; font-size: 2rem; font-weight: 700; color: var(--teal); line-height: 1; }
+  .lufs-unit { font-size: 0.7rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+  .lufs-status { font-size: 0.72rem; margin-top: 6px; padding: 3px 10px; border-radius: 12px; display: inline-block; }
+  .lufs-ok { background: rgba(50,215,75,0.15); color: var(--green); }
+  .lufs-warn { background: rgba(255,159,10,0.15); color: var(--amber); }
+  .lufs-clip { background: rgba(255,69,58,0.15); color: var(--red); }
+
+  /* ===== SPECTRUM ===== */
+  #spectrumCanvas { width: 100%; height: 120px; display: block; background: var(--card); border-radius: 8px; border: 1px solid var(--border); }
+
+  /* ===== PRESET INFO ===== */
+  .preset-info {
+    background: linear-gradient(135deg, rgba(45,212,191,0.09), rgba(255,138,84,0.09));
+    border: 2px solid var(--border-strong); border-radius: 16px; padding: 1rem;
+    margin-bottom: 1.5rem; display: none;
+    box-shadow: var(--shadow-sm);
+  }
+  .preset-info.show { display: block; }
+  .preset-info-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
+  .preset-info-name { font-size: 1.1rem; font-weight: 700; }
+  .preset-info-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.5rem; }
+  .preset-tag {
+    padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 600;
+    background: rgba(255,255,255,0.07); color: var(--muted); border: 1px solid var(--border);
+  }
+  .preset-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.6; margin-top: 0.5rem; }
+
+  /* ===== EXPORT ===== */
+  .export-section {
+    background: var(--panel); border: 2px solid var(--border-strong); border-radius: 20px;
+    padding: 1.5rem; margin-top: 1.25rem;
+    box-shadow: var(--shadow-sm);
+  }
+  .export-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin-top: 1rem; }
+  .export-option {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.9rem; cursor: pointer; transition: all 0.2s;
+  }
+  .export-option:hover { border-color: var(--teal); box-shadow: 0 0 16px rgba(0,245,212,0.1); }
+  .export-option.selected { border-color: var(--teal); background: rgba(0,245,212,0.05); }
+  .export-format { font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+  .export-desc { font-size: 0.75rem; color: var(--muted); }
+
+  /* ===== STATUS BAR ===== */
+  .status-bar {
+    background: var(--panel); border: 2px solid var(--border-strong); border-radius: 14px;
+    padding: 0.6rem 1rem; display: flex; align-items: center; gap: 1rem;
+    margin-bottom: 1.25rem; font-size: 0.78rem; flex-wrap: wrap;
+    box-shadow: var(--shadow-sm);
+  }
+  .status-item { display: flex; align-items: center; gap: 0.4rem; color: var(--muted); }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .dot-green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot-teal { background: var(--teal); box-shadow: 0 0 6px var(--teal); }
+  .dot-purple { background: var(--purple); box-shadow: 0 0 6px var(--purple); }
+  .dot-amber { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+  .status-val { color: var(--text); font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+
+  /* ===== TOGGLE ===== */
+  .toggle-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+  .toggle-label { font-size: 0.82rem; }
+  .toggle {
+    width: 38px; height: 20px; border-radius: 10px; background: var(--border);
+    cursor: pointer; position: relative; transition: background 0.2s; border: none; flex-shrink: 0;
+  }
+  .toggle::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 14px; height: 14px; border-radius: 50%; background: var(--muted);
+    transition: all 0.2s;
+  }
+  .toggle.on { background: var(--teal); }
+  .toggle.on::after { left: 21px; background: #000; }
+
+  /* ===== TIPS ===== */
+  .tip-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.9rem; font-size: 0.8rem; color: var(--muted); line-height: 1.6;
+  }
+  .tip-card strong { color: var(--teal); }
+
+  /* ===== SCROLLBAR ===== */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--void); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ===== TOAST ===== */
+  #toast {
+    position: fixed; bottom: 2rem; right: 2rem; z-index: 999;
+    background: var(--panel); border: 1px solid var(--teal); border-radius: 10px;
+    padding: 0.75rem 1.25rem; font-size: 0.85rem;
+    box-shadow: 0 8px 30px rgba(0,245,212,0.2);
+    transform: translateY(100px); opacity: 0; transition: all 0.3s;
+    max-width: 300px;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ===== ANALYZING OVERLAY ===== */
+  .analyzing-bar {
+    height: 3px; background: linear-gradient(90deg, var(--teal), var(--purple), var(--teal));
+    background-size: 200% 100%;
+    animation: shimmer 1.5s linear infinite;
+    border-radius: 2px; margin-bottom: 0.5rem; display: none;
+  }
+  @keyframes shimmer { 0%{background-position:100%} 100%{background-position:-100%} }
+
+  .section-title {
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--muted); margin-bottom: 0.75rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* LOUDNESS HISTORY */
+  .history-graph { width: 100%; height: 60px; background: var(--card); border-radius: 8px; border: 1px solid var(--border); display: block; }
+</style>
+</head>
+<body>
+
+<div class="page-topbar">
+  <div class="page-topbar-left">
+    <span class="page-title">XVME APPS<span class="page-title-sub"><br>MASTERING</span></span>
+    <!-- id="eqBars" dipakai juga oleh script (buildEQBars) untuk mengisi batang animasinya -->
+    <div class="eq-bars" id="eqBars"></div>
+  </div>
+  <!--<a href="list_aplikasi" class="btn-back"><i class="bi bi-arrow-left"></i> KEMBALI</a>-->
+</div>
+
+<div class="main">
+
+  <!-- Analyzing bar -->
+  <div class="analyzing-bar" id="analyzingBar"></div>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <div class="status-item">
+      <div class="status-dot dot-green"></div>
+      <span>Status:</span>
+      <span class="status-val" id="statusText">Ready</span>
+    </div>
+    <div class="status-item">
+      <div class="status-dot dot-teal"></div>
+      <span>Preset:</span>
+      <span class="status-val" id="statusPreset">—</span>
+    </div>
+    <div class="status-item">
+      <div class="status-dot dot-purple"></div>
+      <span>File:</span>
+      <span class="status-val" id="statusFile">No file loaded</span>
+    </div>
+    <div class="status-item">
+      <div class="status-dot dot-amber"></div>
+      <span>Sample Rate:</span>
+      <span class="status-val" id="statusSR">—</span>
+    </div>
+    <div class="status-item">
+      <span>Duration:</span>
+      <span class="status-val" id="statusDur">—</span>
+    </div>
+  </div>
+
+  <!-- Upload Zone -->
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="fileInput" accept="audio/*,.mp3,.wav,.flac,.aac,.ogg,.m4a,audio/mpeg,audio/wav,audio/x-wav,audio/flac,audio/aac,audio/ogg,audio/mp4,audio/x-m4a">
+    <span class="upload-icon">🎚️</span>
+    <h3>Drop your audio file here</h3>
+    <p>or click to browse from your computer</p>
+    <div class="upload-formats">
+      <span class="format-tag">.mp3</span>
+      <span class="format-tag">.wav</span>
+      <span class="format-tag">.flac</span>
+      <span class="format-tag">.aac</span>
+      <span class="format-tag">.ogg</span>
+      <span class="format-tag">.m4a</span>
+    </div>
+  </div>
+
+  <!-- Waveform Section -->
+  <div class="waveform-section" id="waveformSection">
+    <div class="waveform-header">
+      <span class="waveform-title">Waveform View</span>
+      <span class="waveform-info" id="waveformInfo">—</span>
+    </div>
+    <canvas id="waveformCanvas"></canvas>
+    <div class="transport">
+      <button class="btn btn-teal" id="playBtn" onclick="togglePlay()">▶ Play</button>
+      <button class="btn btn-ghost" onclick="stopAudio()">⏹ Stop</button>
+      <div class="progress-bar">
+        <div class="progress-track" id="progressTrack" onclick="seekAudio(event)">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+      <div class="time-display">
+        <span id="currentTime">0:00</span> / <span id="totalTime">0:00</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+        <span style="font-size:0.75rem;color:var(--muted)">VOL</span>
+        <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.8" style="width:80px" oninput="setVolume(this.value)">
+      </div>
+    </div>
+  </div>
+
+  <!-- Preset Info Banner -->
+  <div class="preset-info" id="presetInfo">
+    <div class="preset-info-header">
+      <span id="presetEmoji" style="font-size:1.5rem">🎵</span>
+      <div>
+        <div class="preset-info-name" id="presetInfoName">—</div>
+        <div style="font-size:0.75rem;color:var(--muted)">Genre Mastering Preset</div>
+      </div>
+    </div>
+    <div class="preset-desc" id="presetInfoDesc">—</div>
+    <div class="preset-info-tags" id="presetInfoTags"></div>
+  </div>
+
+  <!-- Main Mastering Grid -->
+  <div class="mastering-grid">
+
+    <!-- Genre Presets Panel -->
+    <div class="panel-card">
+      <div class="panel-header">
+        <span class="panel-title">🎛 Genre Preset</span>
+        <div class="panel-indicator" id="presetIndicator" style="background:var(--dim);box-shadow:none"></div>
+      </div>
+      <div class="panel-body">
+        <div style="position:relative;margin-bottom:0.75rem;">
+          <input type="text" class="genre-search" placeholder="🔍 Cari genre…" id="genreSearch" oninput="filterDropdown(this.value)" onfocus="openDropdown()" autocomplete="off">
+          <div id="genreDropdown" class="genre-dropdown" style="display:none;"></div>
+        </div>
+        <div id="selectedGenreDisplay" class="selected-genre-card" style="display:none;"></div>
+        <div style="margin-top:0.5rem;">
+          <button class="btn btn-ghost" style="width:100%;font-size:0.75rem;padding:6px;" onclick="clearGenre()">✕ Clear Preset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Middle: EQ + Compressor/Effects -->
+    <div style="display:flex;flex-direction:column;gap:1.25rem;">
+
+      <!-- EQ -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <span class="panel-title">🎚 10-Band Equalizer</span>
+          <div style="display:flex;gap:0.5rem;align-items:center;">
+            <button class="btn btn-ghost" style="padding:4px 10px;font-size:0.72rem;" onclick="flattenEQ()">Flat</button>
+            <button class="toggle on" id="eqToggle" onclick="toggleEQ(this)"></button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="eq-bands" id="eqBandsControl"></div>
+        </div>
+      </div>
+
+      <!-- Compressor -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <span class="panel-title">⚡ Compressor</span>
+          <button class="toggle on" id="compToggle" onclick="toggleComp(this)"></button>
+        </div>
+        <div class="panel-body">
+          <div class="controls-grid">
+            <div class="control-item">
+              <div class="control-label">Threshold</div>
+              <div class="knob-wrap" data-knob="threshold" data-min="-60" data-max="0" data-val="-12" data-unit="dB"></div>
+              <div class="control-value" id="val-threshold">-12 dB</div>
+            </div>
+            <div class="control-item">
+              <div class="control-label">Ratio</div>
+              <div class="knob-wrap" data-knob="ratio" data-min="1" data-max="20" data-val="4" data-unit=":1"></div>
+              <div class="control-value" id="val-ratio">4:1</div>
+            </div>
+            <div class="control-item">
+              <div class="control-label">Attack</div>
+              <div class="knob-wrap" data-knob="attack" data-min="0.1" data-max="200" data-val="10" data-unit="ms"></div>
+              <div class="control-value" id="val-attack">10 ms</div>
+            </div>
+            <div class="control-item">
+              <div class="control-label">Release</div>
+              <div class="knob-wrap" data-knob="release" data-min="10" data-max="2000" data-val="150" data-unit="ms"></div>
+              <div class="control-value" id="val-release">150 ms</div>
+            </div>
+          </div>
+          <div class="slider-row" style="margin-top:0.5rem;">
+            <div class="slider-header">
+              <span class="slider-name">Knee</span>
+              <span class="slider-val" id="val-knee">6 dB</span>
+            </div>
+            <input type="range" min="0" max="40" value="6" class="purple-range" oninput="updateSlider('knee', this.value, 'dB')">
+          </div>
+          <div class="slider-row">
+            <div class="slider-header">
+              <span class="slider-name">Makeup Gain</span>
+              <span class="slider-val" id="val-makeup">+2 dB</span>
+            </div>
+            <input type="range" min="-12" max="24" value="2" class="amber-range" oninput="updateSlider('makeup', this.value, ' dB', true)">
+          </div>
+          <div class="slider-row">
+            <div class="slider-header">
+              <span class="slider-name">Mix (Parallel)</span>
+              <span class="slider-val" id="val-mix">100%</span>
+            </div>
+            <input type="range" min="0" max="100" value="100" oninput="updateSlider('mix', this.value, '%')">
+          </div>
+        </div>
+      </div>
+
+      <!-- Limiter + Stereo -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
+        <div class="panel-card">
+          <div class="panel-header">
+            <span class="panel-title">🔒 Limiter</span>
+            <button class="toggle on" id="limitToggle" onclick="toggleBtn(this)"></button>
+          </div>
+          <div class="panel-body">
+            <div class="slider-row">
+              <div class="slider-header">
+                <span class="slider-name">Ceiling</span>
+                <span class="slider-val" id="val-ceiling">-0.3 dBFS</span>
+              </div>
+              <input type="range" min="-6" max="0" step="0.1" value="-0.3" class="purple-range" oninput="updateSlider('ceiling', parseFloat(this.value).toFixed(1), ' dBFS')">
+            </div>
+            <div class="slider-row">
+              <div class="slider-header">
+                <span class="slider-name">Release</span>
+                <span class="slider-val" id="val-limrelease">50 ms</span>
+              </div>
+              <input type="range" min="1" max="500" value="50" oninput="updateSlider('limrelease', this.value, ' ms')">
+            </div>
+            <div class="slider-row">
+              <div class="slider-header">
+                <span class="slider-name">Lookahead</span>
+                <span class="slider-val" id="val-lookahead">5 ms</span>
+              </div>
+              <input type="range" min="0" max="50" value="5" oninput="updateSlider('lookahead', this.value, ' ms')">
+            </div>
+          </div>
+        </div>
+        <div class="panel-card">
+          <div class="panel-header">
+            <span class="panel-title">↔ Stereo</span>
+            <button class="toggle on" id="stereoToggle" onclick="toggleBtn(this)"></button>
+          </div>
+          <div class="panel-body">
+            <div class="slider-row">
+              <div class="slider-header">
+                <span class="slider-name">Width</span>
+                <span class="slider-val" id="val-width">100%</span>
+              </div>
+              <input type="range" min="0" max="200" value="100" oninput="updateSlider('width', this.value, '%')">
+            </div>
+            <div class="slider-row">
+              <div class="slider-header">
+                <span class="slider-name">Balance</span>
+                <span class="slider-val" id="val-balance">Center</span>
+              </div>
+              <input type="range" min="-100" max="100" value="0" class="amber-range" oninput="updateBalance(this.value)">
+            </div>
+            <div class="slider-row">
+              <div class="slider-header">
+                <span class="slider-name">Mid Gain</span>
+                <span class="slider-val" id="val-midgain">0 dB</span>
+              </div>
+              <input type="range" min="-12" max="12" value="0" class="purple-range" oninput="updateSlider('midgain', this.value, ' dB', true)">
+            </div>
+            <div class="slider-row">
+              <div class="slider-header">
+                <span class="slider-name">Side Gain</span>
+                <span class="slider-val" id="val-sidegain">0 dB</span>
+              </div>
+              <input type="range" min="-12" max="12" value="0" oninput="updateSlider('sidegain', this.value, ' dB', true)">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reverb / Exciter -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
+        <div class="panel-card">
+          <div class="panel-header">
+            <span class="panel-title">🌊 Reverb</span>
+            <button class="toggle" id="reverbToggle" onclick="toggleBtn(this)"></button>
+          </div>
+          <div class="panel-body">
+            <div class="slider-row">
+              <div class="slider-header"><span class="slider-name">Room Size</span><span class="slider-val" id="val-roomsize">30%</span></div>
+              <input type="range" min="0" max="100" value="30" oninput="updateSlider('roomsize', this.value, '%')">
+            </div>
+            <div class="slider-row">
+              <div class="slider-header"><span class="slider-name">Damping</span><span class="slider-val" id="val-damping">50%</span></div>
+              <input type="range" min="0" max="100" value="50" class="purple-range" oninput="updateSlider('damping', this.value, '%')">
+            </div>
+            <div class="slider-row">
+              <div class="slider-header"><span class="slider-name">Wet Mix</span><span class="slider-val" id="val-wetmix">10%</span></div>
+              <input type="range" min="0" max="100" value="10" class="amber-range" oninput="updateSlider('wetmix', this.value, '%')">
+            </div>
+          </div>
+        </div>
+        <div class="panel-card">
+          <div class="panel-header">
+            <span class="panel-title">✨ Exciter</span>
+            <button class="toggle" id="exciterToggle" onclick="toggleBtn(this)"></button>
+          </div>
+          <div class="panel-body">
+            <div class="slider-row">
+              <div class="slider-header"><span class="slider-name">Drive</span><span class="slider-val" id="val-drive">20%</span></div>
+              <input type="range" min="0" max="100" value="20" oninput="updateSlider('drive', this.value, '%')">
+            </div>
+            <div class="slider-row">
+              <div class="slider-header"><span class="slider-name">Freq</span><span class="slider-val" id="val-excfreq">3 kHz</span></div>
+              <input type="range" min="1" max="16" value="3" class="purple-range" oninput="updateSlider('excfreq', this.value, ' kHz')">
+            </div>
+            <div class="slider-row">
+              <div class="slider-header"><span class="slider-name">Harmonics</span><span class="slider-val" id="val-harmonics">30%</span></div>
+              <input type="range" min="0" max="100" value="30" class="amber-range" oninput="updateSlider('harmonics', this.value, '%')">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spectrum Analyzer -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <span class="panel-title">📊 Spectrum Analyzer</span>
+          <span class="mono" style="font-size:0.72rem;color:var(--muted)">20Hz — 20kHz</span>
+        </div>
+        <div class="panel-body">
+          <canvas id="spectrumCanvas"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right: Metering Panel -->
+    <div style="display:flex;flex-direction:column;gap:1.25rem;">
+      <div class="panel-card">
+        <div class="panel-header">
+          <span class="panel-title">📈 Metering</span>
+        </div>
+        <div class="panel-body vu-section">
+          <div class="section-title">Output Levels</div>
+          <div class="vu-channel">
+            <div class="vu-label">LEFT</div>
+            <div class="vu-meter">
+              <div class="vu-fill" id="vuL" style="width:0%"></div>
+              <div class="vu-peak" id="peakL" style="left:0%"></div>
+            </div>
+            <div class="vu-db" id="dbL">-∞</div>
+          </div>
+          <div class="vu-channel">
+            <div class="vu-label">RIGHT</div>
+            <div class="vu-meter">
+              <div class="vu-fill" id="vuR" style="width:0%"></div>
+              <div class="vu-peak" id="peakR" style="left:0%"></div>
+            </div>
+            <div class="vu-db" id="dbR">-∞</div>
+          </div>
+          <div class="vu-channel">
+            <div class="vu-label">MID</div>
+            <div class="vu-meter">
+              <div class="vu-fill" id="vuM" style="width:0%"></div>
+            </div>
+            <div class="vu-db" id="dbM">-∞</div>
+          </div>
+          <div class="vu-channel">
+            <div class="vu-label">SIDE</div>
+            <div class="vu-meter">
+              <div class="vu-fill" id="vuS" style="width:0%"></div>
+            </div>
+            <div class="vu-db" id="dbS">-∞</div>
+          </div>
+
+          <div class="lufs-display">
+            <div class="lufs-val" id="lufsVal">—</div>
+            <div class="lufs-unit">Integrated LUFS</div>
+            <div class="lufs-status lufs-ok" id="lufsStatus">Streaming Ready</div>
+          </div>
+
+          <div style="margin-top:0.75rem;">
+            <div class="section-title">Loudness History</div>
+            <canvas class="history-graph" id="historyGraph"></canvas>
+          </div>
+
+          <div class="section-title" style="margin-top:0.75rem;">Toggles</div>
+          <div class="toggle-row">
+            <span class="toggle-label">Dithering</span>
+            <button class="toggle on" onclick="toggleBtn(this)"></button>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">DC Offset</span>
+            <button class="toggle on" onclick="toggleBtn(this)"></button>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Phase Flip L</span>
+            <button class="toggle" onclick="toggleBtn(this)"></button>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Phase Flip R</span>
+            <button class="toggle" onclick="toggleBtn(this)"></button>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Mono Check</span>
+            <button class="toggle" onclick="toggleBtn(this)"></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip-card">
+        <strong>💡 Mastering Tip</strong><br>
+        <span id="tipText">Select a genre preset and upload your audio to begin mastering.</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Export Section -->
+  <div class="export-section">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+      <div>
+        <div style="font-weight:700;font-size:1.1rem;margin-bottom:4px">Export Mastered Audio</div>
+        <div style="color:var(--muted);font-size:0.82rem">Choose format and quality, then download your mastered track</div>
+      </div>
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+        <button class="btn btn-ghost" onclick="resetAll()">↺ Reset All</button>
+        <button class="btn btn-purple" onclick="applyMastering()">⚡ Apply Mastering</button>
+        <button class="btn btn-amber" onclick="exportAudio()">⬇ Export Track</button>
+      </div>
+    </div>
+    <div class="export-grid" style="grid-template-columns: repeat(3, 1fr);">
+      <div class="export-option selected" onclick="selectExport(this, 'WAV 24-bit')">
+        <div class="export-format" style="color:var(--teal)">WAV 24-bit</div>
+        <div class="export-desc">Lossless · Studio Quality · 44.1/48/96 kHz</div>
+      </div>
+      <div class="export-option" onclick="selectExport(this, 'WAV 16-bit')">
+        <div class="export-format" style="color:var(--teal)">WAV 16-bit</div>
+        <div class="export-desc">CD Quality · Lossless · 44.1 kHz</div>
+      </div>
+      <div class="export-option" onclick="selectExport(this, 'MP3 320kbps')">
+        <div class="export-format" style="color:var(--purple)">MP3 320k</div>
+        <div class="export-desc">Distribution · Streaming · Ukuran lebih kecil</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast">✅ <span id="toastMsg">Done!</span></div>
+
+<script>
+// ===== GENRE DATA (100+ genres, grouped by category) =====
+const genreGroups = [
+  { group: '🎛 Electronic / Club', genres: [
+    { id:'acid-house', name:'Acid House', emoji:'🎛', tag:'Electronic', bpm:'128-140', desc:'Squelchy 303 basslines, punchy kicks. Boosted sub and low-mids, cut harsh highs. Wide stereo on synths.', tags:['Electronic','Dance','Club'], lufs:-9, eq:[2,4,2,-1,-2,-3,-1,1,3,2], comp:{threshold:-18,ratio:4,attack:5,release:120}, color:'#00f5d4' },
+    { id:'bass-house', name:'Bass House', emoji:'🔊', tag:'Electronic', bpm:'128-132', desc:'Massive sub bass, distorted mid-bass, compressed highs. Club-ready loudness with tight low end.', tags:['House','Bass','Club'], lufs:-7, eq:[5,6,4,2,-1,-2,0,2,3,2], comp:{threshold:-14,ratio:6,attack:3,release:80}, color:'#bf5af2' },
+    { id:'deep-house', name:'Deep House', emoji:'🌊', tag:'Electronic', bpm:'120-128', desc:'Warm subs, airy pads, subtle groove. Musical chord stabs, laid-back feel. Spacious and hypnotic.', tags:['House','Deep','Chill'], lufs:-11, eq:[3,4,2,1,0,0,1,2,3,2], comp:{threshold:-18,ratio:3,attack:10,release:150}, color:'#00f5d4' },
+    { id:'tech-house', name:'Tech House', emoji:'🔧', tag:'Electronic', bpm:'126-132', desc:'Punchy kick, rolling bass, minimal but energetic. Tight compression, clean low end, slight grit on mids.', tags:['House','Tech','Club'], lufs:-9, eq:[3,4,3,1,-1,-1,0,1,2,1], comp:{threshold:-14,ratio:5,attack:5,release:100}, color:'#00f5d4' },
+    { id:'progressive-house', name:'Progressive House', emoji:'🌅', tag:'Electronic', bpm:'126-132', desc:'Epic builds, lush synths, emotional drops. Balanced mastering with wide stereo and controlled dynamics.', tags:['House','Progressive','EDM'], lufs:-10, eq:[2,3,2,0,0,1,2,3,4,3], comp:{threshold:-16,ratio:4,attack:8,release:120}, color:'#bf5af2' },
+    { id:'techno', name:'Techno', emoji:'🔩', tag:'Electronic', bpm:'130-150', desc:'Industrial precision, driving kick, clean sub, minimal top-end. Hypnotic groove, maximum floor energy.', tags:['Electronic','Industrial','Club'], lufs:-9, eq:[3,4,3,2,0,-1,-1,1,2,1], comp:{threshold:-14,ratio:6,attack:3,release:80}, color:'#00f5d4' },
+    { id:'industrial-techno', name:'Industrial Techno', emoji:'⚙️', tag:'Electronic', bpm:'140-160', desc:'Harsh textures, brutal kick, metallic percussion. Distorted sub, compressed to destruction, maximum aggression.', tags:['Techno','Industrial','Dark'], lufs:-8, eq:[4,3,2,-1,1,3,3,2,2,1], comp:{threshold:-10,ratio:12,attack:1,release:50}, color:'#ff453a' },
+    { id:'trance', name:'Trance', emoji:'🌀', tag:'Electronic', bpm:'128-145', desc:'Euphoric leads, sweeping builds, powerful drop. Wide stereo, bright highs, punchy kick and bass.', tags:['Trance','EDM','Dance'], lufs:-10, eq:[2,3,2,1,0,1,2,4,5,4], comp:{threshold:-16,ratio:4,attack:8,release:120}, color:'#bf5af2' },
+    { id:'psytrance', name:'Psytrance', emoji:'🔮', tag:'Electronic', bpm:'140-148', desc:'Hypnotic 16th-note bassline, psychedelic leads, fat kick. Maximum energy, compressed and loud.', tags:['Trance','Psychedelic','Festival'], lufs:-8, eq:[3,4,3,2,1,-1,1,3,4,3], comp:{threshold:-12,ratio:8,attack:2,release:60}, color:'#bf5af2' },
+    { id:'dnb', name:'Drum N Bass', emoji:'🥁', tag:'Electronic', bpm:'160-180', desc:'Massive rolling sub, crisp snare attack, very wide stereo on synths. Hard limiting for club play.', tags:['Electronic','Jungle','Club'], lufs:-8, eq:[4,5,3,1,0,-1,0,2,4,3], comp:{threshold:-12,ratio:8,attack:2,release:60}, color:'#00f5d4' },
+    { id:'liquid-dnb', name:'Liquid DnB', emoji:'💧', tag:'Electronic', bpm:'170-180', desc:'Smooth rollers, melodic basslines, clean subs. Lush pads, musical feel, less aggressive than neurofunk.', tags:['DnB','Liquid','Chill'], lufs:-10, eq:[3,4,2,1,0,0,1,2,3,2], comp:{threshold:-16,ratio:4,attack:8,release:100}, color:'#00f5d4' },
+    { id:'neurofunk', name:'Neurofunk', emoji:'🧠', tag:'Electronic', bpm:'170-180', desc:'Complex reese bass, surgical EQ, aggressive processing. Clinical and precise, maximum tension.', tags:['DnB','Dark','Technical'], lufs:-8, eq:[4,5,4,2,2,3,2,1,2,1], comp:{threshold:-10,ratio:10,attack:2,release:60}, color:'#ff453a' },
+    { id:'dubstep', name:'Dubstep', emoji:'💥', tag:'Bass', bpm:'138-142', desc:'Deep sub weight, aggressive mid-bass wobble, hard transients. Maximum loudness on drops.', tags:['Electronic','Bass','Heavy'], lufs:-7, eq:[6,5,3,2,-1,-2,-1,2,4,3], comp:{threshold:-10,ratio:10,attack:1,release:50}, color:'#bf5af2' },
+    { id:'brostep', name:'Brostep', emoji:'💢', tag:'Bass', bpm:'138-145', desc:'Extreme growl bass, very loud drops, distorted everything. Festival-ready aggressive sound design.', tags:['Dubstep','Heavy','Festival'], lufs:-7, eq:[5,4,3,2,1,3,4,3,2,1], comp:{threshold:-10,ratio:12,attack:1,release:40}, color:'#ff453a' },
+    { id:'riddim', name:'Riddim', emoji:'🔱', tag:'Bass', bpm:'140-150', desc:'Minimalist, dark, heavy wobble. Clean sub alongside distorted mid-bass. Repetitive hypnotic drops.', tags:['Dubstep','Dark','Minimal'], lufs:-8, eq:[6,5,3,1,-1,-2,-1,1,2,1], comp:{threshold:-10,ratio:10,attack:1,release:60}, color:'#bf5af2' },
+    { id:'breakbeat', name:'Breakbeat', emoji:'🔀', tag:'Electronic', bpm:'125-145', desc:'Choppy, syncopated drums, funky bass, wide stereo atmosphere. Vintage warmth with modern clarity.', tags:['Electronic','Break','Funk'], lufs:-10, eq:[3,3,2,1,0,1,2,3,3,2], comp:{threshold:-16,ratio:4,attack:8,release:100}, color:'#ff9f0a' },
+    { id:'breaks', name:'Nu-Skool Breaks', emoji:'💫', tag:'Electronic', bpm:'130-145', desc:'Filtered breaks, wide stereo, big bass. Modern edge with classic breakbeat swing.', tags:['Breaks','Electronic','Club'], lufs:-9, eq:[3,4,2,1,0,0,1,2,3,2], comp:{threshold:-14,ratio:5,attack:5,release:90}, color:'#ff9f0a' },
+    { id:'hardstyle', name:'Hardstyle', emoji:'⚡', tag:'Electronic', bpm:'150-165', desc:'Distorted reverse bass kick, screaming synths, maximum aggression. Loud, hard, and relentless.', tags:['Hard','Electronic','Festival'], lufs:-7, eq:[4,3,2,0,2,4,5,4,3,2], comp:{threshold:-10,ratio:12,attack:1,release:40}, color:'#ff453a' },
+    { id:'hardcore-rave', name:'Hardcore/Rave', emoji:'🎆', tag:'Electronic', bpm:'160-200', desc:'Gabber kicks, fast tempos, aggressive sampling. Loud, distorted, and high-energy.', tags:['Hardcore','Rave','Fast'], lufs:-7, eq:[5,4,2,0,1,3,4,3,2,2], comp:{threshold:-10,ratio:12,attack:1,release:30}, color:'#ff453a' },
+    { id:'electronic', name:'Electronic (General)', emoji:'⚡', tag:'Electronic', bpm:'120-140', desc:'Clean, pristine high-end, controlled sub, wide stereo image. Transparent mastering chain.', tags:['Electronic','Synth','Modern'], lufs:-10, eq:[2,3,2,0,-1,-1,1,3,4,3], comp:{threshold:-16,ratio:4,attack:5,release:100}, color:'#00f5d4' },
+    { id:'ambient-electronic', name:'Ambient Electronic', emoji:'🌌', tag:'Electronic', bpm:'60-120', desc:'Vast soundscapes, minimal bass, emphasis on texture and space. Very gentle dynamics.', tags:['Ambient','Electronic','Atmospheric'], lufs:-18, eq:[0,1,1,0,-1,-1,0,1,2,2], comp:{threshold:-30,ratio:1.5,attack:50,release:500}, color:'#00f5d4' },
+    { id:'synthwave', name:'Synthwave', emoji:'🌆', tag:'Electronic', bpm:'95-130', desc:'80s retro aesthetics, lush pads, heavy reverb, gated drums. Nostalgic warmth with modern clarity.', tags:['Retro','Synth','80s'], lufs:-12, eq:[1,2,2,1,0,0,1,2,3,2], comp:{threshold:-20,ratio:3,attack:15,release:150}, color:'#bf5af2' },
+    { id:'retrowave', name:'Retrowave / Outrun', emoji:'🏎', tag:'Electronic', bpm:'100-130', desc:'Fast arpeggios, fat bass, stadium reverb. Cinematic drive and tension.', tags:['Retro','Synth','Cinematic'], lufs:-11, eq:[2,3,2,1,0,1,2,3,3,2], comp:{threshold:-18,ratio:3,attack:10,release:130}, color:'#bf5af2' },
+    { id:'future-bass', name:'Future Bass', emoji:'🌈', tag:'Electronic', bpm:'130-160', desc:'Supersaw chords, loud emotional drops, sidechained pads. Bright and uplifting mastering.', tags:['EDM','Chill','Festival'], lufs:-8, eq:[3,4,2,1,-1,0,2,4,5,4], comp:{threshold:-12,ratio:6,attack:3,release:80}, color:'#ff9f0a' },
+    { id:'melodic-techno', name:'Melodic Techno', emoji:'🎹', tag:'Electronic', bpm:'128-138', desc:'Emotional synth stabs, deep sub, hypnotic groove. Balance between melody and dance floor energy.', tags:['Techno','Melodic','Club'], lufs:-10, eq:[2,3,2,1,0,0,1,2,3,2], comp:{threshold:-16,ratio:4,attack:8,release:120}, color:'#00f5d4' },
+    { id:'minimal-techno', name:'Minimal Techno', emoji:'◼', tag:'Electronic', bpm:'128-135', desc:'Stripped down, hypnotic loops, subtle variation. Tight and punchy low end, clinical midrange.', tags:['Techno','Minimal','Deep'], lufs:-10, eq:[3,4,2,1,-1,-1,0,1,1,1], comp:{threshold:-16,ratio:5,attack:5,release:100}, color:'#00f5d4' },
+    { id:'garage', name:'UK Garage', emoji:'🏠', tag:'Electronic', bpm:'130-135', desc:'Shuffled 2-step rhythms, choppy vocal chops, heavy sub. Bright mids and crisp hi-hats.', tags:['UK','Garage','Bass'], lufs:-10, eq:[4,4,2,0,-1,0,1,3,4,3], comp:{threshold:-16,ratio:5,attack:5,release:80}, color:'#ff6b35' },
+    { id:'grime', name:'Grime', emoji:'🎤', tag:'Electronic', bpm:'130-140', desc:'Hard-hitting 8-bar beats, rolling sub bass, sharp snares. Dark, aggressive, vocal-forward.', tags:['Grime','UK','Bass'], lufs:-9, eq:[4,4,3,1,1,2,2,2,2,1], comp:{threshold:-14,ratio:6,attack:3,release:80}, color:'#ff453a' },
+    { id:'jungle', name:'Jungle', emoji:'🌴', tag:'Electronic', bpm:'155-175', desc:'Amen break chops, heavy ragga vocal samples, rolling subs. Raw energy and classic rave vibes.', tags:['Jungle','Rave','Break'], lufs:-9, eq:[4,5,3,1,0,-1,0,2,3,2], comp:{threshold:-14,ratio:6,attack:3,release:80}, color:'#32d74b' },
+    { id:'footwork', name:'Footwork / Juke', emoji:'👟', tag:'Electronic', bpm:'155-165', desc:'Rapid percussive patterns, chopped vocals, hyperactive rhythms. Bright and punchy Chicago style.', tags:['Footwork','Juke','Chicago'], lufs:-10, eq:[3,3,2,1,1,2,3,3,3,2], comp:{threshold:-14,ratio:5,attack:3,release:70}, color:'#ff6b35' },
+    { id:'jersey-club', name:'Jersey Club', emoji:'💃', tag:'Electronic', bpm:'130-160', desc:'Syncopated kick patterns, vocal chops, fast hi-hats. Energetic and rhythmically complex.', tags:['Club','Jersey','Dance'], lufs:-9, eq:[4,4,3,1,0,1,2,3,3,2], comp:{threshold:-14,ratio:6,attack:3,release:70}, color:'#ff9f0a' },
+    { id:'disco-house', name:'Disco House', emoji:'🪩', tag:'Electronic', bpm:'120-128', desc:'Classic disco samples recontextualized, funky bass, lush strings. Four-to-the-floor groove.', tags:['House','Disco','Funk'], lufs:-11, eq:[3,3,2,1,0,1,2,3,4,3], comp:{threshold:-16,ratio:4,attack:10,release:120}, color:'#ff6b35' },
+    { id:'funkot', name:'Funkot', emoji:'🎆', tag:'Indonesian', bpm:'150-180', desc:'Extreme energy, compressed to the max, ultra-loud kicks. Indonesian club style, full-range saturation.', tags:['Indonesian','Club','Hard'], lufs:-6, eq:[4,5,4,3,1,0,2,3,4,4], comp:{threshold:-10,ratio:12,attack:1,release:40}, color:'#32d74b' },
+    { id:'indobounce', name:'Indobounce / Becak', emoji:'🛺', tag:'Indonesian', bpm:'130-150', desc:'Genre khas Indonesia dengan bounce bass yang bouncy dan energik, kick distorsi, dan synth lead ceria. Perpaduan musik Brazilian dengan Eurodance, cocok untuk hajatan dan dugem gen-z.', tags:['Indonesian','Bounce','Club'], lufs:-7, eq:[5,6,5,3,0,-1,1,3,4,4], comp:{threshold:-10,ratio:10,attack:2,release:50}, color:'#ff6b35' },
+    { id:'jungle-dutch', name:'Jungle Dutch', emoji:'🌿', tag:'Indonesian', bpm:'145-175', desc:'Hybrid unik antara Jungle/DnB dengan nuansa Dutch House dan elektronik Indonesia. Breakbeat cepat, bass terkompresi keras, synth beragam, dan energi rave tropis yang kuat.', tags:['Indonesian','Jungle','Dutch'], lufs:-7, eq:[4,6,4,2,0,-1,0,2,4,3], comp:{threshold:-10,ratio:10,attack:1,release:50}, color:'#32d74b' },
+    { id:'breakbeat-indo', name:'Breakbeat Indonesia', emoji:'🇮🇩', tag:'Indonesian', bpm:'135-150', desc:'Breakbeat khas kafe dan dugem Indonesia — drum break yang dipercepat, bass tebal, dan tembakan synth riser. Lebih ceria dan melodic dibanding breakbeat Barat, sering dipadukan sample vokal lokal.', tags:['Indonesian','Breakbeat','Club'], lufs:-7, eq:[4,5,4,2,0,0,1,3,4,3], comp:{threshold:-11,ratio:9,attack:2,release:60}, color:'#ff9f0a' },
+    { id:'hip-dut', name:'Hip Dut', emoji:'🎙️', tag:'Indonesian', bpm:'100-130', desc:'Fusi Hip Hop dengan Dangdut khas Indonesia — 808 sub bass modern dipadukan gendang dangdut dan cengkok vokal. Groove urban dengan rasa lokal yang kental, punchy dan catchy untuk radio maupun klub.', tags:['Indonesian','Hip Hop','Dangdut'], lufs:-8, eq:[5,4,3,2,1,1,2,3,3,2], comp:{threshold:-13,ratio:6,attack:3,release:90}, color:'#ff6b35' },
+  ]},
+  { group: '🎤 Hip Hop / Trap / Urban', genres: [
+    { id:'hip-hop', name:'Hip Hop (Modern)', emoji:'🎤', tag:'Hip Hop', bpm:'80-100', desc:'Deep 808 sub, punchy snare, clear vocal presence. Heavy limiting for streaming loudness.', tags:['Hip Hop','Rap','Trap'], lufs:-8, eq:[5,4,3,1,0,1,2,3,2,1], comp:{threshold:-14,ratio:6,attack:3,release:80}, color:'#bf5af2' },
+    { id:'old-school-hiphop', name:'Old School Hip Hop', emoji:'🎙', tag:'Hip Hop', bpm:'85-105', desc:'Boom bap drums, vinyl-sampled breaks, warm low-end. Punchy but not overly compressed.', tags:['Hip Hop','Boom Bap','Classic'], lufs:-12, eq:[3,3,3,2,1,1,2,2,1,0], comp:{threshold:-18,ratio:4,attack:10,release:150}, color:'#ff9f0a' },
+    { id:'trap', name:'Trap', emoji:'🧲', tag:'Trap', bpm:'130-170', desc:'Rolling 808 subs, hi-hat rolls, punchy snare. Loud and punishing low-end, crisp highs.', tags:['Hip Hop','Trap','808'], lufs:-8, eq:[6,5,4,2,0,-1,1,3,3,2], comp:{threshold:-12,ratio:8,attack:2,release:60}, color:'#bf5af2' },
+    { id:'drill', name:'Drill (UK/US)', emoji:'🔫', tag:'Trap', bpm:'140-150', desc:'Sliding 808s, dark minor keys, aggressive percussion. Heavy sub, sharp hi-hats, minimal reverb.', tags:['Drill','Trap','Dark'], lufs:-8, eq:[6,5,4,1,-1,-1,1,2,3,2], comp:{threshold:-12,ratio:8,attack:2,release:60}, color:'#ff453a' },
+    { id:'phonk', name:'Phonk', emoji:'💀', tag:'Hip Hop', bpm:'130-150', desc:'Dark gritty sub, vinyl saturation, cowbell presence. Heavy tape compression, lo-fi warmth.', tags:['Hip Hop','Dark','Drift'], lufs:-8, eq:[4,3,2,1,2,3,2,1,0,-1], comp:{threshold:-12,ratio:8,attack:5,release:150}, color:'#ff453a' },
+    { id:'cloud-rap', name:'Cloud Rap', emoji:'☁️', tag:'Hip Hop', bpm:'70-100', desc:'Ethereal, lo-fi textures, dreamy trap beats. Soft sub, reverb-heavy atmosphere.', tags:['Trap','Lo-Fi','Atmospheric'], lufs:-12, eq:[3,3,2,1,0,0,1,1,2,2], comp:{threshold:-20,ratio:3,attack:15,release:200}, color:'#bf5af2' },
+    { id:'funk-br', name:'Brazilian Funk', emoji:'🇧🇷', tag:'Funk', bpm:'130-150', desc:'Heavy sub bass, aggressive snare, vocal clarity. Pumping sidechain, extreme loudness for bailes.', tags:['Funk','Brazilian','Club'], lufs:-7, eq:[6,5,3,2,0,-1,1,2,3,2], comp:{threshold:-10,ratio:10,attack:2,release:50}, color:'#32d74b' },
+    { id:'afrobeats', name:'Afrobeats', emoji:'🌍', tag:'Afro', bpm:'90-110', desc:'Rhythmic percussion, warm bass, vibrant mid-range. Vocal presence and punchy snare define the groove.', tags:['Afro','African','Dance'], lufs:-11, eq:[3,3,3,2,1,1,2,3,3,2], comp:{threshold:-16,ratio:4,attack:8,release:120}, color:'#32d74b' },
+    { id:'afropop', name:'Afropop', emoji:'🌟', tag:'Afro', bpm:'95-115', desc:'Bright and polished Afrobeats production. Radio-ready vocal clarity with warm rhythmic groove.', tags:['Afro','Pop','Radio'], lufs:-12, eq:[2,3,2,1,0,1,2,3,4,3], comp:{threshold:-18,ratio:3,attack:10,release:130}, color:'#32d74b' },
+    { id:'amapiano', name:'Amapiano', emoji:'🎹', tag:'Afro', bpm:'112-116', desc:'Deep log drum bass, jazzy piano stabs, layered percussion. South African groove.', tags:['South African','Afro','Club'], lufs:-10, eq:[4,5,3,2,0,0,1,2,2,1], comp:{threshold:-16,ratio:4,attack:8,release:120}, color:'#32d74b' },
+    { id:'gqom', name:'Gqom', emoji:'🥁', tag:'Afro', bpm:'120-130', desc:'Dark minimal techno-influenced club from Durban. Heavy kick, sparse percussion, eerie atmosphere.', tags:['Gqom','South African','Dark'], lufs:-9, eq:[4,5,4,2,0,-1,0,1,1,1], comp:{threshold:-14,ratio:7,attack:3,release:80}, color:'#ff453a' },
+    { id:'lofi-hiphop', name:'Lo-Fi Hip Hop', emoji:'📻', tag:'Lo-Fi', bpm:'70-90', desc:'Vinyl noise, dusty drums, warm bass. Deliberately lo-fi, gentle limiting, soft high-end rolloff.', tags:['Lo-Fi','Chill','Study'], lufs:-14, eq:[1,2,3,2,1,0,0,-1,-2,-3], comp:{threshold:-24,ratio:2,attack:20,release:300}, color:'#ff9f0a' },
+    { id:'trap-latino', name:'Trap Latino', emoji:'🔥', tag:'Trap', bpm:'70-95', desc:'Half-time feel with reggaeton-tinged melodies, deep 808s, and auto-tuned vocals. Loud and streaming-ready.', tags:['Latin','Trap','Urban'], lufs:-8, eq:[5,4,3,1,0,0,2,3,3,2], comp:{threshold:-13,ratio:7,attack:3,release:80}, color:'#bf5af2' },
+    { id:'melodic-rap', name:'Melodic Rap', emoji:'🎼', tag:'Hip Hop', bpm:'70-140', desc:'Sung-rap hybrid with emotional melodies, layered ad-libs, warm 808s. Balanced vocal clarity and bass weight.', tags:['Hip Hop','Melodic','Emo'], lufs:-9, eq:[3,3,2,1,0,1,2,3,3,2], comp:{threshold:-15,ratio:5,attack:5,release:100}, color:'#bf5af2' },
+    { id:'boom-bap-modern', name:'Modern Boom Bap', emoji:'🥁', tag:'Hip Hop', bpm:'85-95', desc:'Classic sampled drums reimagined with modern low-end weight and crisp mastering polish.', tags:['Hip Hop','Boom Bap','Sample'], lufs:-10, eq:[3,3,3,2,1,1,2,2,2,1], comp:{threshold:-16,ratio:4,attack:8,release:130}, color:'#ff9f0a' },
+  ]},
+  { group: '🎸 Rock / Metal / Guitar', genres: [
+    { id:'rock', name:'Rock', emoji:'🎸', tag:'Rock', bpm:'90-150', desc:'Punchy kick and snare, crunch in upper-mids, controlled low-end mud. Loud and energetic.', tags:['Rock','Guitar','Live'], lufs:-11, eq:[2,2,1,-1,1,3,3,2,1,0], comp:{threshold:-16,ratio:4,attack:10,release:120}, color:'#ff6b35' },
+    { id:'alternative', name:'Alternative Rock', emoji:'🔌', tag:'Rock', bpm:'90-130', desc:'Wide dynamic range, organic feel. Subtle compression, natural transients, room reverb on drums.', tags:['Rock','Indie','Guitar'], lufs:-14, eq:[-1,1,3,2,1,0,1,2,1,0], comp:{threshold:-22,ratio:2.5,attack:20,release:200}, color:'#ff6b35' },
+    { id:'indie-rock', name:'Indie Rock', emoji:'🎵', tag:'Rock', bpm:'100-140', desc:'Jangly guitars, natural room sound, modest compression. Authentic and raw energy preserved.', tags:['Indie','Rock','Alternative'], lufs:-13, eq:[-1,1,2,2,1,0,1,2,2,1], comp:{threshold:-20,ratio:2.5,attack:20,release:200}, color:'#ff6b35' },
+    { id:'metal', name:'Metal', emoji:'🤘', tag:'Metal', bpm:'100-200', desc:'Aggressive upper-mids, tight punchy low-end, no resonant build-up. Max perceived loudness.', tags:['Metal','Heavy','Guitar'], lufs:-9, eq:[3,2,0,-2,2,4,3,2,1,0], comp:{threshold:-12,ratio:8,attack:5,release:100}, color:'#ff453a' },
+    { id:'death-metal', name:'Death Metal', emoji:'💀', tag:'Metal', bpm:'150-220', desc:'Extreme gain guitars, triggered drums, massive wall of sound. Surgical clarity amid brutality.', tags:['Metal','Death','Extreme'], lufs:-8, eq:[4,3,1,-3,1,4,4,3,2,1], comp:{threshold:-10,ratio:10,attack:3,release:80}, color:'#ff453a' },
+    { id:'black-metal', name:'Black Metal', emoji:'🌑', tag:'Metal', bpm:'120-200', desc:'Tremolo guitars, blast beats, raw atmospheric production. Deliberately cold and abrasive.', tags:['Metal','Black','Dark'], lufs:-10, eq:[2,1,0,-1,2,4,5,4,3,2], comp:{threshold:-14,ratio:6,attack:5,release:100}, color:'#ff453a' },
+    { id:'blues-rock', name:'Blues Rock', emoji:'🎺', tag:'Blues', bpm:'70-110', desc:'Warm low-mids, natural tube-like saturation, breathing dynamics. Guitar harmonics preserved.', tags:['Blues','Rock','Guitar'], lufs:-16, eq:[-2,1,4,3,2,1,0,1,2,1], comp:{threshold:-24,ratio:2,attack:30,release:300}, color:'#ff9f0a' },
+    { id:'punk', name:'Punk', emoji:'🦹', tag:'Rock', bpm:'150-200', desc:'Raw and fast, minimal production polish. Guitar crunch, live feel, natural dynamics.', tags:['Punk','Raw','Fast'], lufs:-12, eq:[1,1,2,1,1,3,3,2,1,0], comp:{threshold:-18,ratio:3,attack:10,release:120}, color:'#ff6b35' },
+    { id:'grunge', name:'Grunge', emoji:'🌧', tag:'Rock', bpm:'100-150', desc:'Muddy guitars, powerful dynamics, dirty low-mids. Contrasting quiet and loud sections.', tags:['Grunge','Rock','90s'], lufs:-13, eq:[2,3,4,3,2,1,1,1,0,-1], comp:{threshold:-20,ratio:3,attack:15,release:150}, color:'#ff6b35' },
+    { id:'shoegaze', name:'Shoegaze', emoji:'👟', tag:'Rock', bpm:'90-130', desc:'Walls of distorted guitar, dreamy vocals buried in reverb. Wide stereo and lush texture.', tags:['Shoegaze','Dream Pop','Reverb'], lufs:-13, eq:[1,2,3,2,1,0,0,1,2,2], comp:{threshold:-20,ratio:2.5,attack:20,release:200}, color:'#bf5af2' },
+    { id:'post-rock', name:'Post-Rock', emoji:'🌄', tag:'Rock', bpm:'60-140', desc:'Cinematic builds, massive dynamics, wall of guitars. Very wide stereo, dramatic shifts.', tags:['Post-Rock','Cinematic','Atmospheric'], lufs:-14, eq:[1,2,2,1,0,0,1,2,3,2], comp:{threshold:-22,ratio:2,attack:30,release:300}, color:'#ff6b35' },
+    { id:'math-rock', name:'Math Rock', emoji:'📐', tag:'Rock', bpm:'variable', desc:'Complex polyrhythms, clean guitar tones, tight dynamics. Precise mastering with natural transients.', tags:['Math Rock','Progressive','Indie'], lufs:-14, eq:[0,1,2,2,1,1,2,2,2,1], comp:{threshold:-22,ratio:2,attack:20,release:200}, color:'#ff6b35' },
+    { id:'metalcore', name:'Metalcore', emoji:'⛓️', tag:'Metal', bpm:'140-190', desc:'Breakdown-heavy with djent-style low tunings and screamed/clean vocal contrast. Aggressive but clear.', tags:['Metal','Metalcore','Breakdown'], lufs:-9, eq:[3,3,1,-2,1,3,4,3,2,1], comp:{threshold:-11,ratio:8,attack:3,release:90}, color:'#ff453a' },
+    { id:'progressive-metal', name:'Progressive Metal', emoji:'🧩', tag:'Metal', bpm:'100-180', desc:'Technical riffing, complex time signatures, wide dynamic range preserved amid heaviness.', tags:['Metal','Progressive','Technical'], lufs:-11, eq:[2,2,1,-1,1,3,3,2,2,1], comp:{threshold:-16,ratio:5,attack:8,release:130}, color:'#ff453a' },
+    { id:'emo', name:'Emo', emoji:'💔', tag:'Rock', bpm:'100-150', desc:'Emotional dynamics, jangly clean guitars contrasted with loud choruses. Vocal-forward mastering.', tags:['Emo','Rock','Alternative'], lufs:-12, eq:[0,1,2,2,1,1,2,2,1,0], comp:{threshold:-18,ratio:3,attack:15,release:160}, color:'#ff6b35' },
+  ]},
+  { group: '🎵 Pop / R&B / Soul', genres: [
+    { id:'pop', name:'Pop', emoji:'⭐', tag:'Pop', bpm:'100-130', desc:'Bright, shiny and polished. Vocal clarity front and center. Radio-ready loudness and dynamics.', tags:['Pop','Radio','Mainstream'], lufs:-12, eq:[-1,0,1,0,-1,0,2,4,5,4], comp:{threshold:-18,ratio:3,attack:10,release:120}, color:'#ff9f0a' },
+    { id:'dance-pop', name:'Dance Pop', emoji:'💃', tag:'Pop', bpm:'115-130', desc:'Four-on-the-floor with pop sensibilities. Punchy kick, clear vocals, energetic and bright.', tags:['Pop','Dance','Radio'], lufs:-10, eq:[2,3,2,0,-1,0,2,4,5,4], comp:{threshold:-16,ratio:4,attack:8,release:100}, color:'#ff9f0a' },
+    { id:'k-pop', name:'K-Pop', emoji:'🇰🇷', tag:'Pop', bpm:'100-135', desc:'Hyper-polished production, punchy low end, crystal-clear vocals. High-energy, maximum loudness.', tags:['K-Pop','Korean','Dance'], lufs:-8, eq:[3,4,2,0,-1,1,2,4,5,4], comp:{threshold:-12,ratio:6,attack:5,release:80}, color:'#ff9f0a' },
+    { id:'j-pop', name:'J-Pop', emoji:'🇯🇵', tag:'Pop', bpm:'100-135', desc:'Bright and airy production, melodic focus, polished high-end. Warm vocals with crisp percussion.', tags:['J-Pop','Japanese','Anime'], lufs:-11, eq:[1,2,2,1,0,0,1,3,4,3], comp:{threshold:-16,ratio:3,attack:10,release:120}, color:'#ff9f0a' },
+    { id:'rnb', name:'R&B', emoji:'🎙', tag:'R&B', bpm:'60-95', desc:'Warm, intimate low-mids, silky vocal presence, smooth high-end. Gentle compression, lush space.', tags:['R&B','Soul','Vocal'], lufs:-13, eq:[2,3,3,2,0,0,1,2,2,1], comp:{threshold:-20,ratio:3,attack:15,release:200}, color:'#bf5af2' },
+    { id:'neo-soul', name:'Neo Soul', emoji:'🎶', tag:'R&B', bpm:'70-95', desc:'Organic warmth, vintage Rhodes, live drums. Dynamic range preserved, musical compression.', tags:['Soul','Neo Soul','Organic'], lufs:-14, eq:[1,2,3,3,1,0,1,2,2,1], comp:{threshold:-22,ratio:2.5,attack:20,release:250}, color:'#bf5af2' },
+    { id:'pop-rnb', name:'Pop R&B', emoji:'💫', tag:'R&B', bpm:'90-115', desc:'Modern blend of pop clarity and R&B warmth. Vocal-forward, radio-ready with groove.', tags:['Pop','R&B','Radio'], lufs:-10, eq:[2,3,2,1,-1,0,2,4,4,3], comp:{threshold:-16,ratio:4,attack:8,release:120}, color:'#bf5af2' },
+    { id:'soul', name:'Classic Soul', emoji:'❤️', tag:'Soul', bpm:'65-100', desc:'Live feel, horn sections, warm tube saturation. Natural dynamics, organic mastering.', tags:['Soul','Classic','Vocal'], lufs:-15, eq:[0,2,3,3,1,0,1,2,2,1], comp:{threshold:-24,ratio:2,attack:20,release:250}, color:'#ff9f0a' },
+    { id:'gospel', name:'Gospel', emoji:'🙏', tag:'Gospel', bpm:'60-120', desc:'Powerful vocals, choir harmonies, emotional dynamics. Wide stereo for choirs, punchy kick.', tags:['Gospel','Choir','Spiritual'], lufs:-13, eq:[1,2,2,1,0,0,1,2,3,2], comp:{threshold:-18,ratio:3,attack:15,release:200}, color:'#ff9f0a' },
+    { id:'pop-funk', name:'Pop Funk', emoji:'🕹', tag:'Funk', bpm:'105-125', desc:'Warm groove with pop shine. Punchy bass, snappy snare, clear vocals. Modern radio feel.', tags:['Pop','Funk','Groove'], lufs:-11, eq:[2,3,2,1,0,1,2,3,3,2], comp:{threshold:-18,ratio:4,attack:8,release:120}, color:'#ff6b35' },
+    { id:'bedroom-pop', name:'Bedroom Pop', emoji:'🛏', tag:'Pop', bpm:'80-110', desc:'Intimate and lo-fi aesthetic, close mic vocals, gentle production. Warm and personal.', tags:['Indie','Lo-Fi','Intimate'], lufs:-14, eq:[1,2,3,2,1,0,1,1,1,0], comp:{threshold:-24,ratio:2,attack:20,release:300}, color:'#ff9f0a' },
+    { id:'synth-pop', name:'Synth Pop', emoji:'🎹', tag:'Pop', bpm:'100-125', desc:'Retro-modern synths, bright vocal hooks, punchy programmed drums. Clean and polished.', tags:['Pop','Synth','Retro'], lufs:-11, eq:[1,2,2,1,0,1,2,3,4,3], comp:{threshold:-17,ratio:3,attack:10,release:130}, color:'#ff9f0a' },
+    { id:'c-pop', name:'C-Pop', emoji:'🇨🇳', tag:'Pop', bpm:'90-130', desc:'Polished Mandopop production with emotional vocal delivery and modern trap-pop influences.', tags:['C-Pop','Chinese','Pop'], lufs:-11, eq:[1,2,2,1,0,0,1,3,4,3], comp:{threshold:-17,ratio:3,attack:10,release:130}, color:'#ff9f0a' },
+  ]},
+  { group: '🌍 World / Latin / Folk', genres: [
+    { id:'reggae', name:'Reggae', emoji:'🇯🇲', tag:'Reggae', bpm:'60-90', desc:'Heavy bass and off-beat guitar skank. Warm low-end, natural reverb. Laid-back dynamics.', tags:['Reggae','Jamaica','Bass'], lufs:-14, eq:[3,4,3,2,0,-1,0,1,1,0], comp:{threshold:-22,ratio:2.5,attack:20,release:250}, color:'#32d74b' },
+    { id:'dub', name:'Dub', emoji:'🌿', tag:'Reggae', bpm:'60-80', desc:'Heavy dub delays, massive sub bass, sparse arrangement. Deep and cavernous with space and echo.', tags:['Dub','Reggae','Bass'], lufs:-15, eq:[5,5,3,2,-1,-2,-1,0,0,-1], comp:{threshold:-24,ratio:3,attack:20,release:300}, color:'#32d74b' },
+    { id:'dancehall', name:'Dancehall', emoji:'🎤', tag:'Reggae', bpm:'80-100', desc:'Digital riddims, aggressive bass, vocal dominance. Bright and punchy Jamaican club sound.', tags:['Dancehall','Jamaica','Club'], lufs:-10, eq:[4,4,3,2,0,-1,1,2,3,2], comp:{threshold:-14,ratio:5,attack:5,release:100}, color:'#32d74b' },
+    { id:'reggaeton', name:'Reggaeton', emoji:'🇵🇷', tag:'Latin', bpm:'92-100', desc:'Dembow rhythm, heavy bass, urban Latin flavor. Punchy and loud for streaming and radio.', tags:['Latin','Reggaeton','Urban'], lufs:-9, eq:[4,5,3,2,-1,-1,1,2,3,2], comp:{threshold:-12,ratio:7,attack:3,release:80}, color:'#32d74b' },
+    { id:'latin-pop', name:'Latin Pop', emoji:'🌹', tag:'Latin', bpm:'95-125', desc:'Bright guitar, warm vocals, energetic percussion. Radio-ready Latin flavors.', tags:['Latin','Pop','Spanish'], lufs:-12, eq:[1,2,2,2,1,0,1,3,4,3], comp:{threshold:-16,ratio:3,attack:10,release:130}, color:'#ff9f0a' },
+    { id:'salsa', name:'Salsa', emoji:'💃', tag:'Latin', bpm:'180-240', desc:'Live horns, complex piano montuno, driving clave. Natural dynamics, warm mastering.', tags:['Salsa','Latin','Live'], lufs:-14, eq:[1,2,3,3,1,0,1,2,3,2], comp:{threshold:-20,ratio:2.5,attack:15,release:200}, color:'#ff6b35' },
+    { id:'cumbia', name:'Cumbia', emoji:'🪗', tag:'Latin', bpm:'80-110', desc:'Accordion-driven groove, Colombian roots. Warm bass, punchy percussion, melodic vocals.', tags:['Cumbia','Latin','Folk'], lufs:-13, eq:[1,2,3,3,1,0,1,2,3,2], comp:{threshold:-18,ratio:3,attack:15,release:180}, color:'#ff9f0a' },
+    { id:'bossa-nova', name:'Bossa Nova', emoji:'🇧🇷', tag:'Latin', bpm:'90-130', desc:'Delicate guitar, intimate vocals, subtle percussion. Wide dynamic range, natural warmth.', tags:['Bossa Nova','Jazz','Brazil'], lufs:-16, eq:[-1,0,1,2,1,0,1,2,2,1], comp:{threshold:-26,ratio:1.5,attack:30,release:400}, color:'#ff9f0a' },
+    { id:'samba', name:'Samba', emoji:'🥁', tag:'Latin', bpm:'90-130', desc:'Energetic percussion, complex rhythms, festive energy. Warm and punchy with natural dynamics.', tags:['Samba','Brazil','Percussion'], lufs:-13, eq:[2,3,3,2,1,0,1,2,3,2], comp:{threshold:-18,ratio:3,attack:10,release:150}, color:'#32d74b' },
+    { id:'afrohouse', name:'Afro House', emoji:'🌍', tag:'Afro', bpm:'118-126', desc:'Deep African percussion, spiritual vocals, warm bass. South African dance floor energy.', tags:['Afro','House','Club'], lufs:-10, eq:[3,4,3,2,0,0,1,2,2,1], comp:{threshold:-16,ratio:4,attack:8,release:120}, color:'#32d74b' },
+    { id:'dangdut', name:'Dangdut', emoji:'🎸', tag:'Indonesian', bpm:'90-120', desc:'Warm tabla and gendang punch, vocal clarity, melodic Koplo rhythm. Indonesian folk with modern polish.', tags:['Indonesian','Folk','Koplo'], lufs:-12, eq:[2,3,3,2,1,0,1,2,2,1], comp:{threshold:-18,ratio:3,attack:15,release:180}, color:'#ff9f0a' },
+    { id:'koplo', name:'Dangdut Koplo', emoji:'🥁', tag:'Indonesian', bpm:'110-140', desc:'Faster and heavier dangdut, aggressive tabla, crowd-ready loudness. Indonesian party energy.', tags:['Indonesian','Dangdut','Club'], lufs:-9, eq:[3,4,4,3,1,0,1,2,3,2], comp:{threshold:-12,ratio:7,attack:3,release:80}, color:'#32d74b' },
+    { id:'folk', name:'Folk', emoji:'🪕', tag:'Folk', bpm:'60-120', desc:'Acoustic instruments, natural room sound, vocal warmth. Wide dynamics, gentle mastering.', tags:['Folk','Acoustic','Natural'], lufs:-16, eq:[-1,0,1,2,2,1,1,2,2,1], comp:{threshold:-26,ratio:1.5,attack:30,release:400}, color:'#ff9f0a' },
+    { id:'celtic', name:'Celtic', emoji:'🍀', tag:'Folk', bpm:'90-160', desc:'Fiddle and flute brightness, natural room, live energy. Warm mids, preserved acoustic tone.', tags:['Celtic','Folk','Traditional'], lufs:-15, eq:[-1,0,1,2,2,1,1,2,3,2], comp:{threshold:-22,ratio:2,attack:20,release:250}, color:'#32d74b' },
+    { id:'country', name:'Country', emoji:'🤠', tag:'Country', bpm:'90-140', desc:'Warm acoustic guitar, twangy vocals, natural room. Radio-ready with preserved dynamics.', tags:['Country','Americana','Folk'], lufs:-14, eq:[-1,0,1,2,1,0,1,3,4,3], comp:{threshold:-20,ratio:2.5,attack:15,release:180}, color:'#ff9f0a' },
+    { id:'country-pop', name:'Country Pop', emoji:'🌟', tag:'Country', bpm:'100-130', desc:'Bright and airy, sparkle on acoustic guitar, warm vocals. Moderate compression, radio-ready.', tags:['Country','Pop','Radio'], lufs:-13, eq:[-1,0,1,2,1,0,1,3,4,3], comp:{threshold:-20,ratio:3,attack:15,release:150}, color:'#ff9f0a' },
+    { id:'flamenco', name:'Flamenco', emoji:'💃', tag:'World', bpm:'variable', desc:'Passionate Spanish guitar, palmas percussion, dynamic vocals. Wide dynamics, warm acoustic tone.', tags:['Flamenco','Spanish','Acoustic'], lufs:-15, eq:[-1,0,1,2,2,1,1,2,3,2], comp:{threshold:-24,ratio:2,attack:20,release:300}, color:'#ff6b35' },
+    { id:'bollywood', name:'Bollywood', emoji:'🎬', tag:'World', bpm:'90-140', desc:'Lush orchestration, vocal warmth, rhythmic tabla. Bright and polished cinematic mastering.', tags:['Bollywood','Indian','Cinema'], lufs:-12, eq:[1,2,2,2,1,0,1,3,4,3], comp:{threshold:-16,ratio:3,attack:10,release:150}, color:'#ff9f0a' },
+    { id:'bollywood-edm', name:'Bollywood EDM', emoji:'🎇', tag:'World', bpm:'120-135', desc:'Electronic production meets Indian melody. Big drops, punchy kick, vocal-driven EDM energy.', tags:['Bollywood','EDM','Fusion'], lufs:-9, eq:[3,4,2,1,-1,0,2,4,4,3], comp:{threshold:-12,ratio:6,attack:5,release:90}, color:'#ff9f0a' },
+    { id:'kizomba', name:'Kizomba', emoji:'🌹', tag:'World', bpm:'70-90', desc:'Slow sensual groove, deep bass, warm vocals. Smooth and intimate mastering.', tags:['Kizomba','Angolan','Dance'], lufs:-14, eq:[2,3,3,2,0,0,1,1,2,1], comp:{threshold:-22,ratio:2.5,attack:20,release:250}, color:'#bf5af2' },
+    { id:'zouk', name:'Zouk', emoji:'🇧🇷', tag:'World', bpm:'70-90', desc:'Brazilian Caribbean romance, lush bass, flowing rhythm. Wide stereo, warm and sensual.', tags:['Zouk','Brazil','Romance'], lufs:-14, eq:[2,3,3,2,0,0,1,2,2,1], comp:{threshold:-22,ratio:2.5,attack:15,release:220}, color:'#bf5af2' },
+    { id:'keroncong', name:'Keroncong', emoji:'🪕', tag:'Indonesian', bpm:'60-90', desc:'Musik tradisional Indonesia dengan ukulele cak-cuk, cello pizzicato, dan vokal lembut. Dinamika lebar, mastering halus menjaga karakter akustik asli.', tags:['Indonesian','Traditional','Acoustic'], lufs:-16, eq:[-1,0,1,2,2,1,1,2,2,1], comp:{threshold:-26,ratio:1.5,attack:30,release:400}, color:'#ff9f0a' },
+    { id:'campursari', name:'Campursari', emoji:'🎶', tag:'Indonesian', bpm:'80-120', desc:'Perpaduan gamelan Jawa dengan instrumen modern dan dangdut. Vokal sinden hangat, gendang yang jelas, nuansa pedesaan yang khas.', tags:['Indonesian','Traditional','Fusion'], lufs:-13, eq:[1,2,3,2,1,0,1,2,2,1], comp:{threshold:-19,ratio:3,attack:15,release:200}, color:'#32d74b' },
+  ]},
+  { group: '🎷 Jazz / Blues / Classical', genres: [
+    { id:'jazz', name:'Jazz', emoji:'🎷', tag:'Jazz', bpm:'60-240', desc:'Wide dynamic range, natural acoustic instruments. Very subtle mastering that preserves musicality.', tags:['Jazz','Acoustic','Live'], lufs:-18, eq:[-1,0,1,2,1,0,1,1,2,1], comp:{threshold:-28,ratio:1.5,attack:40,release:500}, color:'#ff9f0a' },
+    { id:'smooth-jazz', name:'Smooth Jazz', emoji:'🌃', tag:'Jazz', bpm:'70-100', desc:'Relaxed groove, polished production, saxophone or guitar lead. Silky and radio-friendly.', tags:['Jazz','Smooth','Radio'], lufs:-14, eq:[0,1,2,2,1,0,1,2,2,1], comp:{threshold:-22,ratio:2,attack:20,release:250}, color:'#ff9f0a' },
+    { id:'blues', name:'Blues', emoji:'🎸', tag:'Blues', bpm:'50-130', desc:'Soulful guitar, natural tube warmth, emotional dynamics. Authentic analog feel.', tags:['Blues','Guitar','Classic'], lufs:-16, eq:[-1,1,3,3,2,1,1,1,2,1], comp:{threshold:-24,ratio:2,attack:25,release:300}, color:'#ff9f0a' },
+    { id:'blues-rock-2', name:'Blues Rock (Alt)', emoji:'🎺', tag:'Blues', bpm:'70-110', desc:'Warm low-mids, natural tube-like saturation, breathing dynamics. Guitar harmonics preserved.', tags:['Blues','Rock','Guitar'], lufs:-16, eq:[-2,1,4,3,2,1,0,1,2,1], comp:{threshold:-24,ratio:2,attack:30,release:300}, color:'#ff9f0a' },
+    { id:'classical', name:'Classical', emoji:'🎻', tag:'Classical', bpm:'variable', desc:'Maximum dynamic range, no limiting. Natural concert hall acoustics preserved completely.', tags:['Classical','Orchestral','Dynamic'], lufs:-23, eq:[0,0,0,0,0,0,0,0,0,0], comp:{threshold:-40,ratio:1.2,attack:100,release:1000}, color:'#bf5af2' },
+    { id:'orchestral', name:'Orchestral / Film Score', emoji:'🎬', tag:'Classical', bpm:'variable', desc:'Cinematic dynamics, wide stereo field, balanced frequency response. Epic and immersive.', tags:['Orchestral','Film','Cinematic'], lufs:-20, eq:[0,1,1,0,0,0,1,1,2,1], comp:{threshold:-32,ratio:1.5,attack:50,release:500}, color:'#bf5af2' },
+    { id:'bebop', name:'Bebop', emoji:'🎺', tag:'Jazz', bpm:'160-260', desc:'Fast improvisation, natural drum kit dynamics, warm horns. Minimal processing to preserve interplay.', tags:['Jazz','Bebop','Live'], lufs:-18, eq:[-1,0,1,2,1,0,1,1,2,1], comp:{threshold:-28,ratio:1.5,attack:40,release:500}, color:'#ff9f0a' },
+  ]},
+  { group: '🕺 Dance / Funk / Groove', genres: [
+    { id:'disco', name:'Disco', emoji:'🕺', tag:'Dance', bpm:'110-125', desc:'Lush strings, punchy kick and bass, bright sheen. Wide stereo, vintage warmth on mix bus.', tags:['Dance','Funk','70s'], lufs:-11, eq:[3,3,1,0,0,1,2,3,4,3], comp:{threshold:-16,ratio:4,attack:10,release:100}, color:'#ff6b35' },
+    { id:'funk', name:'Funk', emoji:'🎸', tag:'Funk', bpm:'90-120', desc:'Punchy bass and guitar stabs, syncopated groove. Live feel with snappy dynamics.', tags:['Funk','Groove','Live'], lufs:-13, eq:[2,3,3,2,1,1,2,2,2,1], comp:{threshold:-18,ratio:3,attack:10,release:150}, color:'#ff6b35' },
+    { id:'nu-disco', name:'Nu-Disco', emoji:'🪩', tag:'Dance', bpm:'115-128', desc:'Modern disco influences, filtered bass, warm pads. Danceable with retro warmth.', tags:['Disco','House','Dance'], lufs:-11, eq:[3,3,2,1,0,1,2,3,4,3], comp:{threshold:-16,ratio:4,attack:10,release:120}, color:'#ff6b35' },
+    { id:'eurodance', name:'Eurodance', emoji:'🇪🇺', tag:'Dance', bpm:'130-150', desc:'Energetic hooks, punchy drums, bright synths. Radio-ready European dance floor sound.', tags:['Dance','Euro','90s'], lufs:-10, eq:[2,3,2,1,-1,0,2,4,5,4], comp:{threshold:-14,ratio:5,attack:5,release:90}, color:'#ff9f0a' },
+    { id:'italo-disco', name:'Italo Disco', emoji:'🇮🇹', tag:'Dance', bpm:'115-125', desc:'Vintage synthesizers, drum machines, bright reverb. Nostalgic European 80s sound.', tags:['Italo','80s','Synth'], lufs:-12, eq:[2,3,2,1,0,1,2,3,4,4], comp:{threshold:-18,ratio:3,attack:10,release:130}, color:'#ff6b35' },
+    { id:'p-funk', name:'P-Funk', emoji:'🌌', tag:'Funk', bpm:'95-125', desc:'Psychedelic funk with fat bass grooves, wah guitar, and thick group vocal harmonies.', tags:['Funk','Psychedelic','Groove'], lufs:-13, eq:[2,3,3,2,1,1,2,2,2,1], comp:{threshold:-18,ratio:3,attack:10,release:150}, color:'#ff6b35' },
+  ]},
+  { group: '😎 Chill / Ambient / Study', genres: [
+    { id:'chillout', name:'Chillout', emoji:'🌅', tag:'Chill', bpm:'70-100', desc:'Relaxed tempo, warm bass, soothing textures. Gentle mastering for background listening.', tags:['Chill','Relaxed','Ambient'], lufs:-16, eq:[1,2,2,1,0,0,1,1,2,1], comp:{threshold:-26,ratio:2,attack:20,release:300}, color:'#00f5d4' },
+    { id:'chillhop', name:'Chillhop', emoji:'🎧', tag:'Chill', bpm:'70-90', desc:'Jazzy samples, lo-fi drums, warm bass. Study-friendly with gentle dynamics.', tags:['Chill','Lo-Fi','Jazz'], lufs:-14, eq:[1,2,3,2,1,0,0,0,1,0], comp:{threshold:-24,ratio:2,attack:20,release:300}, color:'#00f5d4' },
+    { id:'ambient', name:'Ambient', emoji:'🌌', tag:'Ambient', bpm:'variable', desc:'Vast soundscapes, minimal dynamics, pure texture. Very gentle mastering, wide open space.', tags:['Ambient','Atmospheric','Cinematic'], lufs:-20, eq:[0,1,1,0,-1,-1,0,1,2,2], comp:{threshold:-32,ratio:1.3,attack:60,release:600}, color:'#00f5d4' },
+    { id:'nature-sounds', name:'Nature / Meditation', emoji:'🍃', tag:'Ambient', bpm:'none', desc:'Minimal processing, natural textures. Flat response, barely any compression.', tags:['Nature','Meditation','Relax'], lufs:-23, eq:[0,0,0,0,0,0,0,0,0,0], comp:{threshold:-40,ratio:1.1,attack:100,release:1000}, color:'#32d74b' },
+    { id:'downtempo', name:'Downtempo', emoji:'🌙', tag:'Chill', bpm:'80-110', desc:'Slow groove-based electronic music, warm textures, subtle percussion. Relaxed but present low-end.', tags:['Downtempo','Chill','Electronic'], lufs:-15, eq:[1,2,2,1,0,0,1,1,2,1], comp:{threshold:-25,ratio:2,attack:20,release:280}, color:'#00f5d4' },
+  ]},
+];
+
+// Flatten for lookup
+const genres = genreGroups.flatMap(g => g.genres);
+
+const tips = {
+  'acid-house': 'Acid House lives in the 303 resonance. Try boosting 800Hz–2kHz range to bring out the filter sweep character.',
+  'alternative': 'Keep the dynamics alive! Over-compression will kill the emotional punch of alternative music.',
+  'bass-house': 'Check your sub on mono before export — bass-heavy tracks can phase-cancel on mono systems.',
+  'blues-rock': 'Preserve the natural "breathe" of the band by using slow attack on the compressor (20–30ms).',
+  'country-pop': 'Acoustic instruments shine with a gentle high shelf boost around 10kHz. Keep it musical, not harsh.',
+  'disco': 'Disco needs room to breathe. A bit of vintage plate reverb on the bus gives it that 70s Chic feel.',
+  'dnb': 'DnB sub-bass should be felt but not muddy. High-pass everything below 40Hz except the bass and kick.',
+  'dubstep': 'Wobble design matters. Make sure your mid-bass (100–300Hz) cuts through on small speakers.',
+  'electronic': 'Transparent mastering is key. If you can hear the limiter working, back off the gain.',
+  'metal': 'The "wall of sound" needs clarity — cut 250–400Hz to reduce mud and let guitars breathe.',
+  'hip-hop': 'Modern Hip Hop 808s need sub control. Use multiband to keep 40–80Hz punchy but not wobbly.',
+  'funk-br': 'Brazilian Funk is loud by design. Push the LUFS to -7 to -6 for baile compatibility.',
+  'phonk': 'The cowbell and vinyl crackle are flavor. Don\'t over-clean — some noise IS the aesthetic.',
+  'pop': 'Pop masters need the vocal loudest element. Use mid-side EQ to carve space in the center.',
+  'pop-funk': 'Let the groove breathe. Funk needs dynamic contrast between the one and the two.',
+  'rnb': 'Silky smooth R&B benefits from gentle saturation on the mix bus — adds warmth without harshness.',
+  'rock': 'Parallel compression is your friend for rock. Keep 30–40% dry signal to maintain punch.',
+  'techno': 'In Techno, the kick IS the mix. Everything should support it — not fight it.',
+  'trap': 'Trap 808s need to be tuned to the key. Pitchy 808s will ruin an otherwise great master.',
+  'breakbeat': 'Breakbeat lives in the transients. Fast attack will kill it — use 15–25ms minimum.',
+  'funkot': 'Funkot is meant to be LOUD. Target -6 LUFS. Clip limiting is expected in this genre.',
+  'indobounce': 'Indobounce / Becak butuh bass yang "bouncy" — coba boost 60-80Hz dan beri ruang mid yang bersih agar kick dan synth lead bisa bernapas bersama.',
+  'jungle-dutch': 'Jungle Dutch hidup dari energi breakbeat yang cepat. Jaga agar snare dan amen break tetap tajam — jangan biarkan reverb menutupi transien perkusi.',
+  'breakbeat-indo': 'Breakbeat Indonesia butuh riser dan drum break yang jelas — pastikan kick tidak bentrok dengan bass agar tetap terasa "ceria" khas kafe.',
+  'hip-dut': 'Hip Dut menyatukan 808 modern dengan gendang dangdut — jaga agar sub bass tetap fokus di 40-70Hz supaya cengkok vokal dan gendang tetap jelas.',
+  'dangdut': 'Dangdut Koplo energy comes from the tabla attack. Protect 2–5kHz for that percussion snap.',
+  'keroncong': 'Keroncong needs a gentle touch — avoid heavy compression so the ukulele and cello retain their natural decay.',
+  'campursari': 'Campursari blends gamelan and dangdut — keep the gendang punchy while letting the sinden vocal sit clearly on top.',
+  'k-pop': 'K-Pop uses very loud, multi-layered productions — check for inter-sample peaks before export.',
+  'jazz': 'Jazz masters should be as transparent as possible. If you can hear the compressor, reduce the ratio.',
+  'classical': 'Never limit classical — preserve every dynamic. Let it breathe from ppp to fff.',
+  'reggae': 'Reggae bass should be round and powerful but never muddy. Roll off below 35Hz.',
+  'reggaeton': 'The dembow pattern rides the rhythm — make sure your kick and snare cut through the bass.',
+  'trance': 'Trance relies on that "opening up" feeling in the drop. Make sure the filter sweep has room.',
+  'lofi-hiphop': 'Lo-fi is supposed to sound imperfect. Resist over-cleaning — some tape hiss IS the vibe.',
+  'afrobeats': 'Afrobeats groove lives in the percussion interplay. Keep your transients punchy.',
+  'amapiano': 'The log drum bass is everything in Amapiano — make it sit low, fat, and hypnotic.',
+  'drill': 'Drill sliding 808s need to be tuned to the key — off-key 808s are immediately noticeable.',
+  'metalcore': 'Keep the breakdown low end tight — too much sub will smear the palm-mute chug.',
+  'trap-latino': 'Trap Latino leans on half-time drums — leave room for the vocal to breathe over the 808.',
+  'melodic-rap': 'Melodic rap lives in the vocal layering — don\'t over-compress the lead or you\'ll lose the emotion.',
+};
+
+
+const eqBands = ['32Hz','64Hz','125Hz','250Hz','500Hz','1kHz','2kHz','4kHz','8kHz','16kHz'];
+let eqValues = [0,0,0,0,0,0,0,0,0,0];
+let currentGenre = null;
+let audioCtx, audioBuffer, source, gainNode;
+let currentLoadedFilename = '';
+let isPlaying = false;
+let startTime = 0, pauseOffset = 0;
+let animFrame;
+let selectedExport = 'WAV 24-bit';
+let peakLVal = 0, peakRVal = 0;
+let historyData = [];
+let lufsHistory = [];
+
+// ===== LIVE PROCESSING CHAIN =====
+// These nodes persist across play/pause — parameters update in realtime
+let liveEQFilters = [];   // 10 BiquadFilterNode
+let liveCompressor = null; // DynamicsCompressorNode
+let liveMasterGain = null; // GainNode (master output)
+const freqMap = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+
+function buildLiveChain() {
+  if(!audioCtx) return;
+  // Tear down old chain if it exists
+  liveEQFilters = [];
+  liveEQFilters = freqMap.map((freq, i) => {
+    const f = audioCtx.createBiquadFilter();
+    f.type = i === 0 ? 'lowshelf' : i === 9 ? 'highshelf' : 'peaking';
+    f.frequency.value = freq;
+    f.gain.value = eqValues[i] || 0;
+    f.Q.value = 1.2;
+    return f;
+  });
+  // Chain EQ filters in series
+  for(let i = 0; i < liveEQFilters.length - 1; i++) {
+    liveEQFilters[i].connect(liveEQFilters[i+1]);
+  }
+  liveCompressor = audioCtx.createDynamicsCompressor();
+  liveCompressor.threshold.value = knobValues.threshold || -12;
+  liveCompressor.ratio.value     = Math.min(20, Math.max(1, knobValues.ratio || 4));
+  liveCompressor.attack.value    = Math.max(0.001, (knobValues.attack || 10) / 1000);
+  liveCompressor.release.value   = Math.max(0.01,  (knobValues.release || 150) / 1000);
+  liveCompressor.knee.value      = 6;
+  liveEQFilters[liveEQFilters.length - 1].connect(liveCompressor);
+
+  liveMasterGain = audioCtx.createGain();
+  liveMasterGain.gain.value = 0.95;
+  liveCompressor.connect(liveMasterGain);
+  liveMasterGain.connect(audioCtx.destination);
+}
+
+function applyLiveEQ() {
+  liveEQFilters.forEach((f, i) => {
+    if(f) f.gain.setTargetAtTime(eqValues[i] || 0, audioCtx.currentTime, 0.01);
+  });
+}
+
+function applyLiveCompressor() {
+  if(!liveCompressor) return;
+  const t = audioCtx.currentTime;
+  liveCompressor.threshold.setTargetAtTime(knobValues.threshold || -12, t, 0.02);
+  liveCompressor.ratio.setTargetAtTime(Math.min(20, Math.max(1, knobValues.ratio || 4)), t, 0.02);
+  liveCompressor.attack.setTargetAtTime(Math.max(0.001, (knobValues.attack || 10) / 1000), t, 0.02);
+  liveCompressor.release.setTargetAtTime(Math.max(0.01, (knobValues.release || 150) / 1000), t, 0.02);
+}
+
+// ===== INIT =====
+window.onload = () => {
+  buildEQBars();
+  buildEQControl();
+  buildKnobs();
+  animateEQBars();
+  animateMeters();
+  drawSpectrum();
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if(!e.target.closest('.panel-body')) closeDropdown();
+  });
+};
+
+function buildEQBars() {
+  const c = document.getElementById('eqBars');
+  for(let i=0;i<24;i++){
+    const b = document.createElement('div');
+    b.className = 'eq-bar';
+    const dur = (0.4 + Math.random()*0.8).toFixed(2)+'s';
+    b.style.setProperty('--d', dur);
+    b.style.height = (15 + Math.random()*85)+'%';
+    c.appendChild(b);
+  }
+}
+
+// ===== DROPDOWN GENRE =====
+let dropdownVisible = false;
+let filteredList = genres; // currently shown items
+
+function renderDropdown(list) {
+  const dd = document.getElementById('genreDropdown');
+  if(!list.length) {
+    dd.innerHTML = '<div class="dropdown-no-result">No genres found</div>';
+    return;
+  }
+  // Group by category
+  const grouped = {};
+  genreGroups.forEach(g => { grouped[g.group] = []; });
+  list.forEach(g => {
+    const grp = genreGroups.find(gg => gg.genres.some(x => x.id === g.id));
+    if(grp) grouped[grp.group].push(g);
+  });
+  dd.innerHTML = '';
+  Object.entries(grouped).forEach(([groupName, items]) => {
+    if(!items.length) return;
+    const label = document.createElement('div');
+    label.className = 'dropdown-group-label';
+    label.textContent = groupName;
+    dd.appendChild(label);
+    items.forEach(g => {
+      const item = document.createElement('div');
+      item.className = 'dropdown-item' + (currentGenre?.id === g.id ? ' active' : '');
+      item.dataset.id = g.id;
+      item.innerHTML = `<span class="di-emoji">${g.emoji}</span><span class="di-name">${g.name}</span><span class="di-tag">${g.tag}</span><span class="di-lufs">${g.lufs} LUFS</span>`;
+      item.onmousedown = (e) => { e.preventDefault(); selectGenre(g.id); };
+      dd.appendChild(item);
+    });
+  });
+}
+
+function openDropdown() {
+  filteredList = genres;
+  renderDropdown(genres);
+  document.getElementById('genreDropdown').style.display = 'block';
+  dropdownVisible = true;
+}
+
+function closeDropdown() {
+  document.getElementById('genreDropdown').style.display = 'none';
+  dropdownVisible = false;
+  // Restore search field to current genre name or empty
+  const inp = document.getElementById('genreSearch');
+  inp.value = currentGenre ? currentGenre.name : '';
+}
+
+function filterDropdown(q) {
+  if(!dropdownVisible) openDropdown();
+  const lower = q.toLowerCase();
+  filteredList = genres.filter(g =>
+    g.name.toLowerCase().includes(lower) ||
+    g.tag.toLowerCase().includes(lower) ||
+    g.tags.some(t => t.toLowerCase().includes(lower))
+  );
+  renderDropdown(filteredList);
+  document.getElementById('genreDropdown').style.display = 'block';
+}
+
+function clearGenre() {
+  currentGenre = null;
+  document.getElementById('genreSearch').value = '';
+  document.getElementById('selectedGenreDisplay').style.display = 'none';
+  document.getElementById('statusPreset').textContent = '—';
+  document.getElementById('presetIndicator').style.background = 'var(--dim)';
+  document.getElementById('presetIndicator').style.boxShadow = 'none';
+  document.getElementById('presetInfo').classList.remove('show');
+  flattenEQ();
+  showToast('Preset cleared');
+}
+
+function updateSelectedGenreCard(g) {
+  const el = document.getElementById('selectedGenreDisplay');
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="sgc-header">
+      <span class="sgc-emoji">${g.emoji}</span>
+      <div>
+        <div class="sgc-name">${g.name}</div>
+        <div class="sgc-tag">${g.tag} · ${g.bpm} BPM · ${g.lufs} LUFS</div>
+      </div>
+    </div>
+    <div class="sgc-desc">${g.desc}</div>
+    <div class="sgc-meta">${g.tags.map(t=>`<span class="sgc-badge">${t}</span>`).join('')}</div>
+  `;
+}
+
+
+function buildEQControl() {
+  const c = document.getElementById('eqBandsControl');
+  c.innerHTML = '';
+  eqBands.forEach((band, i) => {
+    const div = document.createElement('div');
+    div.className = 'eq-band';
+    div.innerHTML = `
+      <div class="eq-band-value" id="eqVal${i}">0 dB</div>
+      <input type="range" class="vertical-slider" min="-12" max="12" value="0"
+        style="height:100px"
+        oninput="updateEQBand(${i}, this.value)"
+        id="eqSlider${i}">
+      <div class="eq-band-label">${band}</div>
+    `;
+    c.appendChild(div);
+  });
+}
+
+function updateEQBand(i, val) {
+  eqValues[i] = parseFloat(val);
+  const el = document.getElementById(`eqVal${i}`);
+  el.textContent = (val >= 0 ? '+' : '') + parseFloat(val).toFixed(1) + ' dB';
+  el.style.color = val > 0 ? 'var(--teal)' : val < 0 ? '#ff6b35' : 'var(--muted)';
+  // Apply live to audio chain immediately
+  if(liveEQFilters[i] && audioCtx) {
+    liveEQFilters[i].gain.setTargetAtTime(parseFloat(val), audioCtx.currentTime, 0.01);
+  }
+}
+
+function flattenEQ() {
+  eqValues = new Array(10).fill(0);
+  eqBands.forEach((_, i) => {
+    document.getElementById(`eqSlider${i}`).value = 0;
+    updateEQBand(i, 0);
+  });
+  if(audioCtx) applyLiveEQ();
+  showToast('EQ flattened');
+}
+
+// ===== KNOBS =====
+const knobValues = { threshold: -12, ratio: 4, attack: 10, release: 150 };
+
+function buildKnobs() {
+  document.querySelectorAll('.knob-wrap').forEach(k => createKnob(k));
+}
+
+function createKnob(wrap) {
+  const min = parseFloat(wrap.dataset.min);
+  const max = parseFloat(wrap.dataset.max);
+  let val = parseFloat(wrap.dataset.val);
+  const unit = wrap.dataset.unit;
+  const id = wrap.dataset.knob;
+  knobValues[id] = val; // store initial value
+  const r = 22, cx = 30, cy = 30;
+  const startAngle = 220;
+  const totalArc = 260;
+
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('viewBox', '0 0 60 60');
+  svg.classList.add('knob-svg');
+
+  const toRad = a => a * Math.PI / 180;
+  const getXY = (a, radius) => ({
+    x: cx + radius * Math.cos(toRad(a)),
+    y: cy + radius * Math.sin(toRad(a))
+  });
+  const arcPath = (a1, a2, r2) => {
+    const s = getXY(a1, r2), e = getXY(a2, r2);
+    const large = Math.abs(a2 - a1) > 180 ? 1 : 0;
+    return `M ${s.x} ${s.y} A ${r2} ${r2} 0 ${large} 1 ${e.x} ${e.y}`;
+  };
+
+  const bg = document.createElementNS(svgNS, 'circle');
+  bg.setAttribute('cx', cx); bg.setAttribute('cy', cy); bg.setAttribute('r', r);
+  bg.classList.add('knob-center');
+  const track = document.createElementNS(svgNS, 'path');
+  track.setAttribute('d', arcPath(startAngle, startAngle + totalArc, r));
+  track.classList.add('knob-track');
+  const fill = document.createElementNS(svgNS, 'path');
+  fill.classList.add('knob-fill');
+  const dot = document.createElementNS(svgNS, 'circle');
+  dot.setAttribute('r', 3); dot.classList.add('knob-dot');
+  svg.append(bg, track, fill, dot);
+  wrap.appendChild(svg);
+
+  const draw = (v) => {
+    knobValues[id] = v; // always update global store
+    const pct = (v - min) / (max - min);
+    const a = startAngle + pct * totalArc;
+    fill.setAttribute('d', arcPath(startAngle, a, r));
+    const dotPos = getXY(a, r - 1);
+    dot.setAttribute('cx', dotPos.x); dot.setAttribute('cy', dotPos.y);
+    const el = document.getElementById('val-'+id);
+    if(!el) return;
+    if(unit === ':1') el.textContent = parseFloat(v).toFixed(0)+':1';
+    else if(unit === 'ms') el.textContent = parseFloat(v).toFixed(0)+' ms';
+    else el.textContent = parseFloat(v).toFixed(1)+' '+unit;
+    // Apply live to compressor
+    if(audioCtx && liveCompressor) applyLiveCompressor();
+  };
+  draw(val);
+
+  let dragging = false, startY = 0, startVal = val;
+  wrap.addEventListener('mousedown', e => {
+    dragging = true; startY = e.clientY; startVal = val; e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if(!dragging) return;
+    const diff = (startY - e.clientY) / 120 * (max - min);
+    val = Math.max(min, Math.min(max, startVal + diff));
+    draw(val);
+  });
+  document.addEventListener('mouseup', () => { if(dragging){ dragging = false; startVal = val; } });
+  wrap.addEventListener('touchstart', e => {
+    dragging = true; startY = e.touches[0].clientY; startVal = val;
+  }, {passive:true});
+  document.addEventListener('touchmove', e => {
+    if(!dragging) return;
+    const diff = (startY - e.touches[0].clientY) / 120 * (max - min);
+    val = Math.max(min, Math.min(max, startVal + diff));
+    draw(val);
+  }, {passive:true});
+  document.addEventListener('touchend', () => { if(dragging){ dragging = false; startVal = val; } });
+}
+
+// ===== GENRE SELECT =====
+function selectGenre(id) {
+  const g = genres.find(x => x.id === id);
+  if(!g) return;
+  currentGenre = g;
+
+  // Update search field and close dropdown
+  document.getElementById('genreSearch').value = g.name;
+  closeDropdown();
+
+  // Update selected card
+  updateSelectedGenreCard(g);
+
+  document.getElementById('statusPreset').textContent = g.name;
+  document.getElementById('presetIndicator').style.background = g.color;
+  document.getElementById('presetIndicator').style.boxShadow = `0 0 8px ${g.color}`;
+
+  // Apply EQ
+  g.eq.forEach((v, i) => {
+    eqValues[i] = v;
+    const sl = document.getElementById(`eqSlider${i}`);
+    if(sl) sl.value = v;
+    updateEQBand(i, v);
+  });
+
+  // Apply compressor knob display + live update
+  knobValues.threshold = g.comp.threshold;
+  knobValues.ratio     = g.comp.ratio;
+  knobValues.attack    = g.comp.attack;
+  knobValues.release   = g.comp.release;
+  updateKnobVal('threshold', g.comp.threshold, 'dB');
+  updateKnobVal('ratio', g.comp.ratio, ':1');
+  updateKnobVal('attack', g.comp.attack, 'ms');
+  updateKnobVal('release', g.comp.release, 'ms');
+  if(audioCtx) applyLiveCompressor();
+
+  // Show preset info banner
+  const info = document.getElementById('presetInfo');
+  info.classList.add('show');
+  document.getElementById('presetEmoji').textContent = g.emoji;
+  document.getElementById('presetInfoName').textContent = g.name;
+  document.getElementById('presetInfoDesc').textContent = g.desc;
+  const tagsEl = document.getElementById('presetInfoTags');
+  tagsEl.innerHTML = [`BPM: ${g.bpm}`, `Target: ${g.lufs} LUFS`, ...g.tags].map(t => `<span class="preset-tag">${t}</span>`).join('');
+
+  // Tip
+  document.getElementById('tipText').textContent = tips[id] || 'Apply the preset and fine-tune to taste.';
+
+  // LUFS display
+  const lufsEl = document.getElementById('lufsVal');
+  lufsEl.textContent = g.lufs;
+  updateLUFSStatus(g.lufs);
+
+  showToast(`${g.emoji} ${g.name} — aktif realtime!`);
+  if(isPlaying) document.getElementById('statusText').textContent = '🎛 Live Processing';
+}
+
+function updateKnobVal(id, val, unit) {
+  knobValues[id] = val; // sync global store
+  const el = document.getElementById('val-'+id);
+  if(!el) return;
+  if(unit === ':1') el.textContent = val+':1';
+  else el.textContent = val+' '+unit;
+}
+
+function updateLUFSStatus(lufs) {
+  const el = document.getElementById('lufsStatus');
+  if(lufs >= -14) { el.className = 'lufs-status lufs-ok'; el.textContent = 'Streaming Ready'; }
+  else if(lufs >= -18) { el.className = 'lufs-status lufs-warn'; el.textContent = 'Below Streaming Target'; }
+  else { el.className = 'lufs-status lufs-clip'; el.textContent = 'Too Quiet'; }
+}
+
+// ===== UPLOAD =====
+const uploadZone = document.getElementById('uploadZone');
+uploadZone.addEventListener('click', () => document.getElementById('fileInput').click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if(file) loadAudioFile(file);
+});
+document.getElementById('fileInput').addEventListener('change', e => {
+  if(e.target.files[0]) loadAudioFile(e.target.files[0]);
+});
+
+function loadAudioFile(file) {
+  const name = file.name;
+  currentLoadedFilename = name;
+  const size = (file.size / 1024 / 1024).toFixed(2);
+  document.getElementById('statusFile').textContent = name;
+  document.getElementById('statusText').textContent = 'Analyzing...';
+  document.getElementById('analyzingBar').style.display = 'block';
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx.decodeAudioData(e.target.result).then(buffer => {
+      audioBuffer = buffer;
+      buildLiveChain(); // Build live processing chain once audio is loaded
+      const dur = buffer.duration;
+      const mins = Math.floor(dur/60), secs = Math.floor(dur%60);
+      document.getElementById('statusSR').textContent = (buffer.sampleRate/1000).toFixed(1)+' kHz';
+      document.getElementById('statusDur').textContent = `${mins}:${secs.toString().padStart(2,'0')}`;
+      document.getElementById('totalTime').textContent = `${mins}:${secs.toString().padStart(2,'0')}`;
+      document.getElementById('waveformInfo').textContent = `${name} · ${size} MB · ${buffer.numberOfChannels}ch`;
+      document.getElementById('waveformSection').style.display = 'block';
+      document.getElementById('analyzingBar').style.display = 'none';
+      document.getElementById('statusText').textContent = 'Ready to Master';
+      drawWaveform(buffer);
+      showToast('📁 Audio loaded successfully');
+    }).catch(err => {
+      document.getElementById('analyzingBar').style.display = 'none';
+      document.getElementById('statusText').textContent = 'Error loading file';
+      showToast('❌ Could not decode audio file');
+    });
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function drawWaveform(buffer) {
+  const canvas = document.getElementById('waveformCanvas');
+  canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+  canvas.height = 80 * window.devicePixelRatio;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  const W = canvas.offsetWidth, H = 80;
+  const data = buffer.getChannelData(0);
+  const step = Math.ceil(data.length / W);
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fillRect(0,0,W,H);
+  const grad = ctx.createLinearGradient(0,0,W,0);
+  grad.addColorStop(0,'#00f5d4'); grad.addColorStop(0.5,'#bf5af2'); grad.addColorStop(1,'#00f5d4');
+  ctx.fillStyle = grad;
+  for(let i=0;i<W;i++){
+    let min=1,max=-1;
+    for(let j=0;j<step;j++){
+      const v = data[i*step+j] || 0;
+      if(v<min)min=v; if(v>max)max=v;
+    }
+    const y1 = (1-max)/2*H, y2 = (1-min)/2*H;
+    ctx.fillRect(i, y1, 1, Math.max(1, y2-y1));
+  }
+  ctx.fillStyle = 'rgba(0,245,212,0.15)';
+  ctx.fillRect(0, H/2-0.5, W, 1);
+}
+
+// ===== PLAYBACK =====
+function togglePlay() {
+  if(!audioBuffer){ showToast('Please upload an audio file first'); return; }
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if(isPlaying) {
+    pauseOffset += audioCtx.currentTime - startTime;
+    source?.stop();
+    isPlaying = false;
+    document.getElementById('playBtn').textContent = '▶ Play';
+    cancelAnimationFrame(animFrame);
+  } else {
+    // Ensure live chain exists
+    if(!liveMasterGain) buildLiveChain();
+
+    source = audioCtx.createBufferSource();
+    source.buffer = audioBuffer;
+
+    // Volume gain before EQ chain
+    gainNode = audioCtx.createGain();
+    gainNode.gain.value = parseFloat(document.getElementById('volumeSlider').value);
+
+    // Route: source → gainNode → EQ chain → compressor → masterGain → destination
+    source.connect(gainNode);
+    gainNode.connect(liveEQFilters[0]);
+
+    source.start(0, pauseOffset % audioBuffer.duration);
+    startTime = audioCtx.currentTime;
+    isPlaying = true;
+    document.getElementById('playBtn').textContent = '⏸ Pause';
+    updateProgress();
+    source.onended = () => {
+      if(isPlaying){ isPlaying = false; pauseOffset = 0; document.getElementById('playBtn').textContent = '▶ Play'; }
+    };
+  }
+}
+
+function stopAudio() {
+  try { source?.stop(); } catch(e) {}
+  isPlaying = false;
+  pauseOffset = 0;
+  document.getElementById('playBtn').textContent = '▶ Play';
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('currentTime').textContent = '0:00';
+  cancelAnimationFrame(animFrame);
+  // Rebuild chain so it's fresh for next play (gain node disconnected)
+  if(audioCtx && audioBuffer) buildLiveChain();
+}
+
+function seekAudio(e) {
+  if(!audioBuffer) return;
+  const track = document.getElementById('progressTrack');
+  const pct = e.offsetX / track.offsetWidth;
+  pauseOffset = pct * audioBuffer.duration;
+  if(isPlaying){ source?.stop(); isPlaying = false; togglePlay(); }
+}
+
+function updateProgress() {
+  if(!isPlaying || !audioBuffer) return;
+  const elapsed = pauseOffset + (audioCtx.currentTime - startTime);
+  const pct = Math.min(100, (elapsed / audioBuffer.duration) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  const t = elapsed;
+  const m = Math.floor(t/60), s = Math.floor(t%60);
+  document.getElementById('currentTime').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  animFrame = requestAnimationFrame(updateProgress);
+}
+
+function setVolume(v) {
+  if(gainNode) gainNode.gain.value = parseFloat(v);
+}
+
+// ===== SLIDERS =====
+function updateSlider(id, val, unit, signed=false) {
+  const el = document.getElementById('val-'+id);
+  if(!el) return;
+  if(id === 'balance') { updateBalance(val); return; }
+  const num = parseFloat(val);
+  const prefix = signed && num > 0 ? '+' : '';
+  el.textContent = prefix + num + unit;
+}
+
+function updateBalance(val) {
+  const el = document.getElementById('val-balance');
+  if(!el) return;
+  const v = parseInt(val);
+  if(v === 0) el.textContent = 'Center';
+  else if(v < 0) el.textContent = `L ${Math.abs(v)}%`;
+  else el.textContent = `R ${v}%`;
+}
+
+// ===== TOGGLES =====
+function toggleBtn(el) { el.classList.toggle('on'); }
+function toggleEQ(el) { el.classList.toggle('on'); showToast(el.classList.contains('on') ? 'EQ On' : 'EQ Bypassed'); }
+function toggleComp(el) { el.classList.toggle('on'); showToast(el.classList.contains('on') ? 'Compressor On' : 'Compressor Bypassed'); }
+
+// ===== METERS (animated) =====
+function animateMeters() {
+  let t = 0;
+  function frame() {
+    t += 0.05;
+    const base = currentGenre ? Math.min(95, 40 + Math.abs(currentGenre.lufs) * 2.5) : 30;
+    const lv = Math.max(0, Math.min(100, base + Math.sin(t*1.3)*15 + Math.random()*8));
+    const rv = Math.max(0, Math.min(100, base + Math.sin(t*1.1+0.5)*15 + Math.random()*8));
+    const mv = (lv+rv)/2 * 0.9;
+    const sv = Math.abs(lv-rv) * 1.5;
+
+    const setMeter = (id, val, peakId) => {
+      document.getElementById(id).style.width = val+'%';
+      if(peakId) {
+        const store = peakId === 'peakL' ? 'peakLVal' : 'peakRVal';
+        if(val > window[store]) window[store] = val;
+        window[store] *= 0.998;
+        document.getElementById(peakId).style.left = window[store]+'%';
+      }
+      const db = val > 0 ? (20*Math.log10(val/100)).toFixed(1) : '-∞';
+      const dbEl = document.getElementById(id.replace('vu','db'));
+      if(dbEl) dbEl.textContent = db;
+    };
+
+    setMeter('vuL', lv, 'peakL');
+    setMeter('vuR', rv, 'peakR');
+    setMeter('vuM', mv, null);
+    setMeter('vuS', sv, null);
+
+    // LUFS
+    if(currentGenre) {
+      const lufsNoise = currentGenre.lufs + Math.sin(t*0.2)*0.5;
+      document.getElementById('lufsVal').textContent = lufsNoise.toFixed(1);
+      lufsHistory.push(lufsNoise);
+      if(lufsHistory.length > 60) lufsHistory.shift();
+      drawHistory();
+    }
+
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+function drawHistory() {
+  const canvas = document.getElementById('historyGraph');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width = canvas.offsetWidth;
+  const H = canvas.height = 60;
+  ctx.clearRect(0,0,W,H);
+  if(lufsHistory.length < 2) return;
+  ctx.beginPath();
+  const grad = ctx.createLinearGradient(0,0,W,0);
+  grad.addColorStop(0,'rgba(0,245,212,0.8)');
+  grad.addColorStop(1,'rgba(191,90,242,0.8)');
+  ctx.strokeStyle = grad; ctx.lineWidth = 2;
+  lufsHistory.forEach((v, i) => {
+    const x = i / (lufsHistory.length-1) * W;
+    const y = H - ((v + 30) / 30 * H * 0.8) - 5;
+    i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+  const fillGrad = ctx.createLinearGradient(0,0,0,H);
+  fillGrad.addColorStop(0,'rgba(0,245,212,0.2)');
+  fillGrad.addColorStop(1,'rgba(0,245,212,0)');
+  ctx.fillStyle = fillGrad; ctx.fill();
+}
+
+// ===== SPECTRUM =====
+function drawSpectrum() {
+  const canvas = document.getElementById('spectrumCanvas');
+  let t = 0;
+  function frame() {
+    const W = canvas.width = canvas.offsetWidth;
+    const H = canvas.height = 120;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,W,H);
+    t += 0.04;
+    const bars = 64;
+    const bw = W/bars;
+    for(let i=0;i<bars;i++){
+      const freq = i/bars;
+      const boost = currentGenre ? (currentGenre.eq[Math.floor(freq*10)] || 0) : 0;
+      const h = Math.max(2, (20 + Math.sin(t + i*0.4)*15 + Math.cos(t*0.7+i*0.2)*10 + boost*2) * 0.8);
+      const pct = h / H;
+      const grad = ctx.createLinearGradient(0, H-h, 0, H);
+      grad.addColorStop(0, pct > 0.7 ? '#ff453a' : pct > 0.5 ? '#ff9f0a' : '#00f5d4');
+      grad.addColorStop(1, 'rgba(0,245,212,0.1)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(i*bw + 1, H-h, bw-2, h);
+    }
+    // Freq labels
+    ctx.fillStyle = 'rgba(136,136,170,0.6)';
+    ctx.font = '9px JetBrains Mono, monospace';
+    ['20','100','500','1k','5k','10k','20k'].forEach((label, li) => {
+      const x = [0,0.12,0.3,0.45,0.65,0.78,0.95][li]*W;
+      ctx.fillText(label, x, H-2);
+    });
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+// ===== EQ BARS ANIM =====
+function animateEQBars() {
+  const bars = document.querySelectorAll('.eq-bar');
+  setInterval(() => {
+    bars.forEach(b => {
+      b.style.height = (currentGenre ? 10+Math.random()*90 : 10+Math.random()*40)+'%';
+    });
+  }, 300);
+}
+
+// ===== EXPORT =====
+function selectExport(el, format) {
+  document.querySelectorAll('.export-option').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedExport = format;
+}
+
+function applyMastering() {
+  if(!currentGenre) { showToast('⚠️ Pilih genre preset terlebih dahulu'); return; }
+  // With live chain, mastering is already applied in realtime!
+  // Just give feedback and force-sync all parameters
+  if(audioCtx) {
+    applyLiveEQ();
+    applyLiveCompressor();
+  }
+  document.getElementById('statusText').textContent = 'Mastering Applied ✓';
+  showToast(`✅ ${currentGenre.name} mastering live — dengarkan perubahannya!`);
+}
+
+// Render audio offline dengan EQ applied, lalu download WAV atau MP3
+async function exportAudio() {
+  if(!audioBuffer) { showToast('⚠️ Belum ada audio yang diupload'); return; }
+  if(!currentGenre) { showToast('⚠️ Pilih genre preset terlebih dahulu'); return; }
+
+  const isMP3 = selectedExport === 'MP3 320kbps';
+  const is24bit = selectedExport === 'WAV 24-bit';
+
+  const btn = document.querySelector('.btn-amber');
+  if(btn) { btn.disabled = true; btn.textContent = '⏳ Rendering...'; }
+  document.getElementById('statusText').textContent = 'Rendering audio...';
+  document.getElementById('analyzingBar').style.display = 'block';
+  showToast('⏳ Merender audio... mungkin butuh beberapa detik');
+
+  await new Promise(r => setTimeout(r, 100));
+
+  try {
+    const sr = audioBuffer.sampleRate;
+    const numCh = audioBuffer.numberOfChannels;
+    const numFrames = audioBuffer.length;
+
+    // Offline render dengan EQ + Compressor chain
+    const offCtx = new OfflineAudioContext(numCh, numFrames, sr);
+    const src = offCtx.createBufferSource();
+    src.buffer = audioBuffer;
+
+    // EQ chain 10 band
+    const freqMapOff = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+    let lastNode = src;
+    freqMapOff.forEach((freq, i) => {
+      const filter = offCtx.createBiquadFilter();
+      filter.type = i === 0 ? 'lowshelf' : i === 9 ? 'highshelf' : 'peaking';
+      filter.frequency.value = freq;
+      filter.gain.value = eqValues[i] || 0;
+      filter.Q.value = 1.2;
+      lastNode.connect(filter);
+      lastNode = filter;
+    });
+
+    // Compressor
+    const comp = offCtx.createDynamicsCompressor();
+    comp.threshold.value  = knobValues.threshold || -12;
+    comp.ratio.value      = Math.min(20, Math.max(1, knobValues.ratio || 4));
+    comp.attack.value     = Math.max(0.001, (knobValues.attack || 10) / 1000);
+    comp.release.value    = Math.max(0.01,  (knobValues.release || 150) / 1000);
+    comp.knee.value       = 6;
+    lastNode.connect(comp);
+
+    const master = offCtx.createGain();
+    master.gain.value = 0.95;
+    comp.connect(master);
+    master.connect(offCtx.destination);
+
+    src.start(0);
+    const rendered = await offCtx.startRendering();
+
+    const baseName = currentLoadedFilename
+      ? currentLoadedFilename.replace(/\.[^.]+$/, '')
+      : 'audio';
+
+    if(isMP3) {
+      // ===== MP3 ENCODE via lamejs =====
+      showToast('⏳ Encoding MP3 320kbps...');
+      await new Promise(r => setTimeout(r, 50)); // let UI breathe
+
+      const channels = numCh >= 2 ? 2 : 1;
+      const mp3enc = new lamejs.Mp3Encoder(channels, sr, 320);
+      const blockSize = 1152;
+      const mp3Data = [];
+
+      // Get float PCM per channel, convert to Int16
+      const toInt16 = (floatArr) => {
+        const int16 = new Int16Array(floatArr.length);
+        for(let i = 0; i < floatArr.length; i++) {
+          const s = Math.max(-1, Math.min(1, floatArr[i]));
+          int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+        return int16;
+      };
+
+      const leftPCM  = toInt16(rendered.getChannelData(0));
+      const rightPCM = channels === 2 ? toInt16(rendered.getChannelData(1)) : leftPCM;
+
+      for(let i = 0; i < numFrames; i += blockSize) {
+        const leftChunk  = leftPCM.subarray(i, i + blockSize);
+        const rightChunk = rightPCM.subarray(i, i + blockSize);
+        const mp3buf = channels === 2
+          ? mp3enc.encodeBuffer(leftChunk, rightChunk)
+          : mp3enc.encodeBuffer(leftChunk);
+        if(mp3buf.length > 0) mp3Data.push(mp3buf);
+      }
+      const finalBuf = mp3enc.flush();
+      if(finalBuf.length > 0) mp3Data.push(finalBuf);
+
+      const mp3Blob = new Blob(mp3Data, { type: 'audio/mpeg' });
+      const fname = `${baseName}_mastered_${currentGenre.id}.mp3`;
+      triggerDownload(mp3Blob, fname);
+      document.getElementById('statusText').textContent = 'Export Selesai ✓';
+      showToast(`✅ Download dimulai: ${fname}`);
+
+    } else {
+      // ===== WAV ENCODE =====
+      const wavBlob = encodeWAV(rendered, is24bit ? 24 : 16);
+      const fname = `${baseName}_mastered_${currentGenre.id}.wav`;
+      triggerDownload(wavBlob, fname);
+      document.getElementById('statusText').textContent = 'Export Selesai ✓';
+      showToast(`✅ Download dimulai: ${fname}`);
+    }
+
+  } catch(err) {
+    document.getElementById('statusText').textContent = 'Export Gagal';
+    console.error('Export error:', err);
+    showToast('❌ Error: ' + (err.message || 'Unknown error'));
+  } finally {
+    document.getElementById('analyzingBar').style.display = 'none';
+    if(btn) { btn.disabled = false; btn.textContent = '⬇ Export Track'; }
+  }
+}
+
+// Encode AudioBuffer ke WAV Blob (16-bit atau 24-bit PCM)
+function encodeWAV(buffer, bitDepth = 16) {
+  const numCh = buffer.numberOfChannels;
+  const sr = buffer.sampleRate;
+  const numFrames = buffer.length;
+  const bytesPerSample = bitDepth === 24 ? 3 : 2;
+  const blockAlign = numCh * bytesPerSample;
+  const byteRate = sr * blockAlign;
+  const dataSize = numFrames * blockAlign;
+  const wavBuf = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(wavBuf);
+
+  const write = (offset, str) => { for(let i=0;i<str.length;i++) view.setUint8(offset+i, str.charCodeAt(i)); };
+  write(0, 'RIFF');
+  view.setUint32(4, 36 + dataSize, true);
+  write(8, 'WAVE');
+  write(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);        // PCM
+  view.setUint16(22, numCh, true);
+  view.setUint32(24, sr, true);
+  view.setUint32(28, byteRate, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitDepth, true);
+  write(36, 'data');
+  view.setUint32(40, dataSize, true);
+
+  // Interleave channels
+  let offset = 44;
+  for(let i = 0; i < numFrames; i++) {
+    for(let ch = 0; ch < numCh; ch++) {
+      let s = buffer.getChannelData(ch)[i];
+      s = Math.max(-1, Math.min(1, s));
+      if(bitDepth === 24) {
+        const val = s < 0 ? s * 0x800000 : s * 0x7FFFFF;
+        const i32 = Math.round(val);
+        view.setUint8(offset,     i32 & 0xFF);
+        view.setUint8(offset + 1, (i32 >> 8) & 0xFF);
+        view.setUint8(offset + 2, (i32 >> 16) & 0xFF);
+        offset += 3;
+      } else {
+        const val = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        view.setInt16(offset, Math.round(val), true);
+        offset += 2;
+      }
+    }
+  }
+  return new Blob([wavBuf], { type: 'audio/wav' });
+}
+
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+function resetAll() {
+  flattenEQ();
+  currentGenre = null;
+  document.getElementById('statusPreset').textContent = '—';
+  document.getElementById('presetInfo').classList.remove('show');
+  document.querySelectorAll('.genre-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('presetIndicator').style.background = 'var(--dim)';
+  document.getElementById('presetIndicator').style.boxShadow = 'none';
+  document.getElementById('lufsVal').textContent = '—';
+  document.getElementById('tipText').textContent = 'Select a genre preset and upload your audio to begin mastering.';
+  showToast('↺ All settings reset');
+}
+
+// ===== TOAST =====
+let toastTimer;
+function showToast(msg) {
+  document.getElementById('toastMsg').textContent = msg;
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ===== GLOBAL PEAKS =====
+window.peakLVal = 0;
+window.peakRVal = 0;
+</script>
+</body>
+</html>

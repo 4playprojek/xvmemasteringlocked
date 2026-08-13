@@ -1,0 +1,50 @@
+{
+  "name": "xvme-mastering",
+  "productName": "XVME APPS - Audio Mastering",
+  "version": "1.0.0",
+  "description": "XVME APPS Audio Mastering - standalone desktop version",
+  "main": "main.js",
+  "author": "XVME APPS",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win --publish never"
+  },
+  "dependencies": {
+    "node-machine-id": "^1.1.12"
+  },
+  "devDependencies": {
+    "electron": "22.3.27",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "publish": null,
+    "appId": "com.xvmeapps.mastering",
+    "productName": "XVME APPS - Audio Mastering",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "license.html",
+      "app/**/*"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64", "ia32"] }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "XVME-Mastering-Setup-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "XVME Mastering"
+    }
+  }
+}

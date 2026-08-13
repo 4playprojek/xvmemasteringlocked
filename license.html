@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Aktivasi Lisensi - XVME Mastering</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0d0c14;
+    color: #eee;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .box {
+    background: #17151f;
+    padding: 36px;
+    border-radius: 16px;
+    width: 380px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5);
+  }
+  h1 {
+    margin: 0 0 4px;
+    font-size: 20px;
+    background: linear-gradient(90deg, #2dd4bf, #8b7bff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  p.sub { margin: 0 0 24px; color: #9a95b3; font-size: 13px; }
+  label { font-size: 13px; color: #b8b3cc; display: block; margin-bottom: 6px; }
+  input {
+    width: 100%;
+    padding: 11px 12px;
+    margin-bottom: 16px;
+    border-radius: 8px;
+    border: 1px solid #2a2836;
+    background: #0d0c14;
+    color: #eee;
+    font-size: 14px;
+  }
+  input:focus { outline: none; border-color: #8b7bff; }
+  button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #2dd4bf, #8b7bff);
+    color: #0d0c14;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  button:disabled { opacity: .6; cursor: not-allowed; }
+  button.secondary {
+    background: transparent;
+    color: #9a95b3;
+    font-weight: 500;
+    margin-top: 10px;
+    border: 1px solid #2a2836;
+  }
+  .msg {
+    font-size: 13px;
+    margin-bottom: 16px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    display: none;
+  }
+  .msg.error { background: #3a1e1e; color: #ff6b6b; display: block; }
+  .msg.success { background: #16352c; color: #2dd4bf; display: block; }
+  .msg.info { background: #232130; color: #b8b3cc; display: block; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <h1>XVME Mastering</h1>
+    <p class="sub">Masukkan username dan license key untuk mengaktifkan aplikasi di komputer ini.</p>
+
+    <div id="msg" class="msg"></div>
+
+    <label for="username">Username</label>
+    <input type="text" id="username" autocomplete="off" />
+
+    <label for="licenseKey">License Key</label>
+    <input type="text" id="licenseKey" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" />
+
+    <button id="activateBtn">Aktifkan</button>
+    <button id="releaseBtn" class="secondary">Lepas lisensi dari komputer ini</button>
+  </div>
+
+  <script>
+    const msgEl = document.getElementById('msg');
+    const usernameEl = document.getElementById('username');
+    const keyEl = document.getElementById('licenseKey');
+    const activateBtn = document.getElementById('activateBtn');
+    const releaseBtn = document.getElementById('releaseBtn');
+
+    function showMsg(text, type) {
+      msgEl.textContent = text;
+      msgEl.className = 'msg ' + type;
+    }
+
+    // Auto-format license key jadi huruf besar
+    keyEl.addEventListener('input', () => {
+      keyEl.value = keyEl.value.toUpperCase();
+    });
+
+    activateBtn.addEventListener('click', async () => {
+      const username = usernameEl.value.trim();
+      const licenseKey = keyEl.value.trim();
+      if (!username || !licenseKey) {
+        showMsg('Username dan license key wajib diisi.', 'error');
+        return;
+      }
+      activateBtn.disabled = true;
+      showMsg('Memeriksa lisensi...', 'info');
+      const result = await window.licenseAPI.activate(username, licenseKey);
+      activateBtn.disabled = false;
+      if (!result.ok) {
+        showMsg(result.message || 'Aktivasi gagal.', 'error');
+      } else {
+        showMsg('Lisensi aktif! Membuka aplikasi...', 'success');
+      }
+      // main process akan otomatis pindah ke app window kalau ok
+    });
+
+    releaseBtn.addEventListener('click', async () => {
+      const username = usernameEl.value.trim();
+      const licenseKey = keyEl.value.trim();
+      if (!username || !licenseKey) {
+        showMsg('Isi username dan license key dulu untuk melepas lisensi ini.', 'error');
+        return;
+      }
+      releaseBtn.disabled = true;
+      showMsg('Melepas lisensi...', 'info');
+      const result = await window.licenseAPI.release(username, licenseKey);
+      releaseBtn.disabled = false;
+      showMsg(result.message || (result.ok ? 'Lisensi dilepas.' : 'Gagal melepas lisensi.'), result.ok ? 'success' : 'error');
+    });
+
+    // Kalau ada cache lisensi dari aktivasi sebelumnya, isi otomatis
+    window.licenseAPI.getCached().then((cached) => {
+      if (cached) {
+        usernameEl.value = cached.username || '';
+        keyEl.value = cached.licenseKey || '';
+      }
+    });
+  </script>
+</body>
+</html>
